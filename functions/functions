@@ -1,5 +1,0 @@
-functions/
-├── add-user.sh
-├── del-user.sh
-├── renew-user.sh
-└── online.sh
