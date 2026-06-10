@@ -1,42 +1,30 @@
 #!/bin/bash
 
-while true
-do
+if [ "$EUID" -ne 0 ]; then
+  echo "Ejecutá como root: sudo bash install.sh"
+  exit 1
+fi
+
 clear
+echo "================================="
+echo "     JITTER SSH MANAGER"
+echo "================================="
+echo "Instalando..."
 
-echo "==============================="
-echo "      JITTER SSH MANAGER"
-echo "==============================="
+REPO_RAW="https://raw.githubusercontent.com/jittervpn/Script-ssh-project/main"
+
+# Descargar menu.sh y dejarlo como comando "menu"
+curl -fsSL "$REPO_RAW/menu.sh" -o /usr/local/bin/menu || {
+  echo "❌ Error al descargar menu.sh"
+  exit 1
+}
+
+# Corregir finales de línea por si fue editado en Windows
+sed -i 's/\r$//' /usr/local/bin/menu
+
+# Permisos de ejecución
+chmod +x /usr/local/bin/menu
+
 echo ""
-echo "1) Crear Usuario"
-echo "2) Eliminar Usuario"
-echo "3) Ver Usuarios"
-echo "0) Salir"
-echo ""
-
-read -p "Seleccione una opción: " op
-
-case $op in
-
-1)
-echo "Crear usuario"
-read
-;;
-
-2)
-echo "Eliminar usuario"
-read
-;;
-
-3)
-cut -d: -f1 /etc/passwd
-read
-;;
-
-0)
-exit
-;;
-
-esac
-
-done
+echo "✅ Instalación completada"
+echo "👉 Escribí: menu"
