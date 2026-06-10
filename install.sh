@@ -25,7 +25,7 @@ EOF
 systemctl restart sshd
 sed -i 's/\r$//' /usr/local/bin/menu
 chmod +x /usr/local/bin/menu
-
+}
 echo ""
 echo "✅ Instalación completada"
 echo "👉 Escribí: menu"
