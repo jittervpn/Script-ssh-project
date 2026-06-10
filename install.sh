@@ -4,7 +4,7 @@
 
 clear
 echo "======================================"
-echo " JITTER SSH MANAGER v2.0 - Ubuntu 24"
+echo " JITTER SSH MANAGER v2.1 - Ubuntu 24"
 echo "======================================"
 
 echo "[1/8] Instalando dependencias..."
