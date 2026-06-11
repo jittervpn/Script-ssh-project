@@ -1,305 +1,282 @@
 #!/bin/bash
-# ================================================================
-#   JITTER PANEL SSH - Instalador del Sistema de Admin
-#   Instala en TU VPS: servidor de licencias + bot de Telegram
-#   Ejecutar como root en tu VPS principal
-# ================================================================
+# ============================================
+#   JITTER SSH MANAGER
+# ============================================
 
-# COLORES JITTER THEME
-PURPLE='\033[0;35m'; VIOLET='\033[1;35m'; PINK='\033[1;95m'
-CYAN='\033[0;96m'; BLUE='\033[0;94m'; GREEN='\033[0;92m'
-YELLOW='\033[1;93m'; RED='\033[0;91m'; WHITE='\033[1;97m'
-GRAY='\033[0;90m'; NC='\033[0m'
+# Colores
+R="\033[1;31m"; V="\033[1;32m"; A="\033[1;33m"; AZ="\033[1;34m"; M="\033[1;35m"; C="\033[1;36m"; B="\033[1;37m"; N="\033[0m"
 
-# ── FUNCIONES DE ANIMACIÓN ────────────────────────────────────
-spinner() {
-    local pid=$1
-    local delay=0.1
-    local spinstr='⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏'
-    while [ "$(ps a | awk '{print $1}' | grep $pid)" ]; do
-        local temp=${spinstr#?}
-        printf " ${CYAN}[%c]${NC}  " "$spinstr"
-        local spinstr=$temp${spinstr%"$temp"}
-        sleep $delay
-        printf "\b\b\b\b\b"
-    done
-    printf "    \b\b\b\b"
+[ "$EUID" -ne 0 ] && { echo -e "${R}Ejecutá como root${N}"; exit 1; }
+
+pausa(){ echo ""; read -p "Presioná ENTER para continuar..."; }
+
+# -------- CREAR USUARIO SSH --------
+crear_usuario(){
+  clear
+  echo -e "${A}===== CREAR USUARIO SSH =====${N}"
+  read -p "Usuario: " user
+  read -p "Contraseña: " pass
+  read -p "Días de duración: " dias
+  read -p "Límite de conexiones: " limite
+
+  if id "$user" &>/dev/null; then
+    echo -e "${R}El usuario ya existe${N}"; pausa; return
+  fi
+
+  exp=$(date -d "+${dias} days" +%Y-%m-%d)
+  useradd -M -s /bin/false -e "$exp" "$user"
+  echo "$user:$pass" | chpasswd
+
+  mkdir -p /etc/JitterVPN
+  echo "$user $limite" >> /etc/JitterVPN/usuarios.db
+
+  IP=$(curl -4 -s ifconfig.me 2>/dev/null || hostname -I | awk '{print $1}')
+  echo ""
+  echo -e "${V}✅ Usuario creado${N}"
+  echo -e "${B}Usuario:${N} $user"
+  echo -e "${B}Pass:${N} $pass"
+  echo -e "${B}Expira:${N} $exp"
+  echo -e "${B}Límite:${N} $limite"
+  echo -e "${B}IP:${N} $IP"
+  pausa
 }
 
-loading_bar() {
-    local duration=$1
-    local msg=$2
-    echo -ne "${BLUE}▸${NC} ${WHITE}$msg${NC} "
-    for i in $(seq 1 20); do
-        echo -ne "${VIOLET}█${NC}"
-        sleep $(bc -l <<< "$duration/20")
-    done
-    echo -e " ${GREEN}✓${NC}"
+# -------- ELIMINAR USUARIO --------
+eliminar_usuario(){
+  clear
+  echo -e "${A}===== ELIMINAR USUARIO =====${N}"
+  read -p "Usuario a eliminar: " user
+  if id "$user" &>/dev/null; then
+    pkill -KILL -u "$user" 2>/dev/null
+    userdel -r "$user" 2>/dev/null
+    sed -i "/^$user /d" /etc/JitterVPN/usuarios.db 2>/dev/null
+    echo -e "${V}✅ Usuario $user eliminado${N}"
+  else
+    echo -e "${R}No existe${N}"
+  fi
+  pausa
 }
 
-clear
-echo -e "${VIOLET}"
-cat << 'LOGO'
-      ██╗██╗████████╗████████╗███████╗██████╗ 
-      ██║██║╚══██╔══╝╚══██╔══╝██╔════╝██╔══██╗
-      ██║██║   ██║      ██║   █████╗  ██████╔╝
- ██   ██║██║   ██║      ██║   ██╔══╝  ██╔══██╗
- ╚█████╔╝██║   ██║      ██║   ███████╗██║  ██║
-  ╚════╝ ╚═╝   ╚═╝      ╚═╝   ╚══════╝╚═╝  ╚═╝
-LOGO
-echo -e "${PINK}     █ PANEL SSH MANAGER - INSTALADOR v3.1 █${NC}"
-echo -e "${VIOLET}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-echo ""
+# -------- LISTAR USUARIOS --------
+listar_usuarios(){
+  clear
+  echo -e "${A}===== USUARIOS SSH =====${N}"
+  awk -F: '$3>=1000 && $1!="nobody"{print $1" -> Expira: "}' /etc/passwd | while read line; do
+    u=$(echo "$line" | awk '{print $1}')
+    exp=$(chage -l "$u" 2>/dev/null | grep "Account expires" | cut -d: -f2)
+    echo -e "${B}$u${N} | Expira:$exp"
+  done
+  pausa
+}
 
-[[ $EUID -ne 0 ]] && echo -e "${RED}[!] Ejecutar como root${NC}" && exit 1
+# -------- INSTALAR DROPBEAR --------
+instalar_dropbear(){
+  clear
+  echo -e "${A}===== INSTALAR DROPBEAR =====${N}"
+  read -p "Puerto Dropbear (ej 444): " p1
+  read -p "Puerto Dropbear extra (ej 80): " p2
+  apt-get update -y
+  apt-get install -y dropbear
+  sed -i 's/NO_START=1/NO_START=0/' /etc/default/dropbear
+  sed -i "s/DROPBEAR_PORT=.*/DROPBEAR_PORT=$p1/" /etc/default/dropbear
+  sed -i "s/DROPBEAR_EXTRA_ARGS=.*/DROPBEAR_EXTRA_ARGS=\"-p $p2\"/" /etc/default/dropbear
+  grep -q "/bin/false" /etc/shells || echo "/bin/false" >> /etc/shells
+  grep -q "/usr/sbin/nologin" /etc/shells || echo "/usr/sbin/nologin" >> /etc/shells
+  systemctl restart dropbear
+  systemctl enable dropbear
+  echo -e "${V}✅ Dropbear instalado en puertos $p1 y $p2${N}"
+  pausa
+}
 
-# ── Obtener IP del VPS admin ───────────────────────────────────
-loading_bar 0.5 "Detectando IP del VPS"
-MY_IP=$(curl -s --max-time 5 ifconfig.me 2>/dev/null || hostname -I | awk '{print $1}')
-echo -e " ${BLUE}▸${NC} ${WHITE}IP Detectada:${NC} ${CYAN}$MY_IP${NC}"
-echo ""
+# -------- INSTALAR PROXY PYTHON (WEBSOCKET) --------
+instalar_proxy_python(){
+  clear
+  echo -e "${A}===== INSTALAR PROXY PYTHON =====${N}"
+  read -p "Puerto del proxy (ej 8080): " pport
+  apt-get install -y python3
 
-# ── Solicitar datos de configuración ──────────────────────────
-echo -e "${VIOLET}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-echo -e "${WHITE} Configuración Inicial del Jitter Panel SSH${NC}"
-echo -e "${VIOLET}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-echo ""
+  cat > /usr/local/bin/jitter-proxy.py <<'PYEOF'
+#!/usr/bin/env python3
+import socket, threading, sys, select
+LISTENING_ADDR='0.0.0.0'
+try: LISTENING_PORT=int(sys.argv[1])
+except: LISTENING_PORT=8080
+PASS=''
+BUFLEN=8196*8
+TIMEOUT=60
+DEFAULT_HOST='127.0.0.1:22'
+RESPONSE='HTTP/1.1 101 <b>JitterVPN</b>\r\n\r\n'
 
-# 1. Token del bot de Telegram
-echo -e "${PINK}[1/4]${NC} ${WHITE}TOKEN del Bot de Telegram${NC}"
-echo -e "      ${GRAY}→ Ve a Telegram, busca @BotFather${NC}"
-echo -e "      ${GRAY}→ Escribe /newbot, pon un nombre, obtendrás el token${NC}"
-echo -e "      ${GRAY}→ Formato: 1234567890:ABCdefGHIjklMNO...${NC}"
-echo ""
-echo -ne " ${BLUE}▸${NC} ${WHITE}Pega tu BOT TOKEN: ${NC}"
-read BOT_TOKEN
-if [[ -z "$BOT_TOKEN" ]]; then
-    echo -e "${RED}[!] Token requerido${NC}"; exit 1
-fi
+class Server(threading.Thread):
+    def __init__(self,host,port):
+        threading.Thread.__init__(self)
+        self.running=False
+        self.host=host; self.port=port
+        self.threads=[]
+        self.threadsLock=threading.Lock()
+        self.logLock=threading.Lock()
+    def run(self):
+        self.soc=socket.socket(socket.AF_INET,socket.SOCK_STREAM)
+        self.soc.setsockopt(socket.SOL_SOCKET,socket.SO_REUSEADDR,1)
+        self.soc.settimeout(2)
+        self.soc.bind((self.host,self.port))
+        self.soc.listen(0)
+        self.running=True
+        while self.running:
+            try:
+                c,addr=self.soc.accept(); c.setblocking(1)
+            except socket.timeout: continue
+            conn=ConnectionHandler(c,self,addr); conn.start()
+            self.addConn(conn)
+        self.soc.close()
+    def addConn(self,conn):
+        with self.threadsLock:
+            if self.running: self.threads.append(conn)
+    def removeConn(self,conn):
+        with self.threadsLock: self.threads.remove(conn)
 
-echo ""
+class ConnectionHandler(threading.Thread):
+    def __init__(self,sClient,server,addr):
+        threading.Thread.__init__(self)
+        self.client=sClient; self.clientClosed=False
+        self.targetClosed=True; self.server=server
+        self.clientBuffer=''
+    def close(self):
+        try:
+            if not self.clientClosed: self.client.shutdown(socket.SHUT_RDWR); self.client.close()
+        except: pass
+        self.clientClosed=True
+        try:
+            if not self.targetClosed: self.target.shutdown(socket.SHUT_RDWR); self.target.close()
+        except: pass
+        self.targetClosed=True
+    def run(self):
+        try:
+            self.clientBuffer=self.client.recv(BUFLEN).decode(errors='ignore')
+            hostPort=self.findHeader(self.clientBuffer,'X-Real-Host')
+            if hostPort=='': hostPort=DEFAULT_HOST
+            split=self.findHeader(self.clientBuffer,'X-Split')
+            if split!='': self.client.recv(BUFLEN)
+            if hostPort!='':
+                passwd=self.findHeader(self.clientBuffer,'X-Pass')
+                if len(PASS)!=0 and passwd==PASS: self.method_CONNECT(hostPort)
+                elif len(PASS)!=0 and passwd!=PASS: self.client.send(b'HTTP/1.1 400 WrongPass!\r\n\r\n')
+                elif hostPort.startswith('127.0.0.1') or hostPort.startswith('localhost'): self.method_CONNECT(hostPort)
+                else: self.client.send(b'HTTP/1.1 403 Forbidden!\r\n\r\n')
+            else: self.client.send(b'HTTP/1.1 400 NoXRH!\r\n\r\n')
+        except Exception: pass
+        finally: self.close(); self.server.removeConn(self)
+    def findHeader(self,head,header):
+        aux=head.find(header+': ')
+        if aux==-1: return ''
+        aux=head.find(':',aux); head=head[aux+2:]
+        aux=head.find('\r\n')
+        if aux==-1: return ''
+        return head[:aux]
+    def connect_target(self,host):
+        i=host.find(':')
+        if i!=-1: port=int(host[i+1:]); host=host[:i]
+        else: port=22
+        (soc_family,_,_,_,address)=socket.getaddrinfo(host,port)[0]
+        self.target=socket.socket(soc_family,socket.SOCK_STREAM); self.targetClosed=False
+        self.target.connect(address)
+    def method_CONNECT(self,path):
+        self.connect_target(path)
+        self.client.sendall(RESPONSE.encode())
+        self.clientBuffer=''; self.doCONNECT()
+    def doCONNECT(self):
+        socs=[self.client,self.target]; count=0; error=False
+        while True:
+            count+=1
+            (recv,_,err)=select.select(socs,[],socs,3)
+            if err: error=True
+            if recv:
+                for in_ in recv:
+                    try:
+                        data=in_.recv(BUFLEN)
+                        if data:
+                            if in_ is self.target: self.client.send(data)
+                            else:
+                                while data: byte=self.target.send(data); data=data[byte:]
+                            count=0
+                        else: break
+                    except: error=True; break
+            if count==TIMEOUT: error=True
+            if error: break
 
-# 2. Telegram ID del admin
-echo -e "${PINK}[2/4]${NC} ${WHITE}Tu TELEGRAM ID (número)${NC}"
-echo -e "      ${GRAY}→ Ve a Telegram, busca @userinfobot${NC}"
-echo -e "      ${GRAY}→ Escríbele /start${NC}"
-echo -e "      ${GRAY}→ Te dirá tu ID: ej. 123456789${NC}"
-echo ""
-echo -ne " ${BLUE}▸${NC} ${WHITE}Tu Telegram ID: ${NC}"
-read ADMIN_ID
-if [[ -z "$ADMIN_ID" ]]; then
-    echo -e "${RED}[!] ID requerido${NC}"; exit 1
-fi
+def main():
+    print(f"Proxy en {LISTENING_ADDR}:{LISTENING_PORT}")
+    server=Server(LISTENING_ADDR,LISTENING_PORT); server.start()
+    while True:
+        try: import time; time.sleep(2)
+        except KeyboardInterrupt: server.running=False; break
 
-echo ""
+if __name__=='__main__': main()
+PYEOF
 
-# 3. Token secreto de admin (lo inventa el usuario)
-echo -e "${PINK}[3/4]${NC} ${WHITE}Token secreto de administración${NC}"
-echo -e "      ${GRAY}→ Inventa una contraseña segura para proteger el servidor${NC}"
-echo -e "      ${GRAY}→ Ej: MiClaveSecreta2024 (guárdala, no la pierdas)${NC}"
-echo ""
-echo -ne " ${BLUE}▸${NC} ${WHITE}Token secreto (o Enter para generar uno): ${NC}"
-read ADMIN_TOKEN
-if [[ -z "$ADMIN_TOKEN" ]]; then
-    ADMIN_TOKEN=$(openssl rand -hex 16)
-    echo -e " ${GREEN}▸ Token generado: ${CYAN}$ADMIN_TOKEN${NC}"
-    echo -e " ${YELLOW}⚠  Guárdalo en un lugar seguro${NC}"
-fi
+  chmod +x /usr/local/bin/jitter-proxy.py
 
-echo ""
+  cat > /etc/systemd/system/jitter-proxy.service <<EOF
+[Unit]
+Description=Jitter Proxy Python
+After=network.target
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 /usr/local/bin/jitter-proxy.py $pport
+Restart=always
+[Install]
+WantedBy=multi-user.target
+EOF
 
-# 4. Puerto del servidor de licencias
-echo -e "${PINK}[4/4]${NC} ${WHITE}Puerto del servidor de licencias${NC}"
-echo -e "      ${GRAY}→ Por defecto: 3000 (puedes cambiarlo)${NC}"
-echo ""
-echo -ne " ${BLUE}▸${NC} ${WHITE}Puerto (Enter = 3000): ${NC}"
-read LIC_PORT
-[[ -z "$LIC_PORT" ]] && LIC_PORT=3000
+  systemctl daemon-reload
+  systemctl enable jitter-proxy
+  systemctl restart jitter-proxy
+  echo -e "${V}✅ Proxy Python corriendo en puerto $pport${N}"
+  pausa
+}
 
-echo ""
-echo -e "${VIOLET}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-echo -e "${WHITE} Resumen de Configuración:${NC}"
-echo -e "  ${BLUE}Bot Token:${NC}    ${CYAN}${BOT_TOKEN:0:20}...${NC}"
-echo -e "  ${BLUE}Admin ID:${NC}     ${CYAN}$ADMIN_ID${NC}"
-echo -e "  ${BLUE}Admin Token:${NC}  ${CYAN}$ADMIN_TOKEN${NC}"
-echo -e "  ${BLUE}Puerto:${NC}       ${CYAN}$LIC_PORT${NC}"
-echo -e "  ${BLUE}URL servidor:${NC} ${CYAN}http://$MY_IP:$LIC_PORT${NC}"
-echo -e "${VIOLET}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}"
-echo ""
-echo -ne "${YELLOW}¿Continuar con esta configuración? (s/n): ${NC}"
-read CONFIRM
-[[ "$CONFIRM" != "s" && "$CONFIRM" != "S" ]] && echo "Cancelado." && exit 0
+# -------- ESTADO SERVICIOS --------
+estado(){
+  clear
+  echo -e "${A}===== ESTADO DE SERVICIOS =====${N}"
+  for s in ssh dropbear jitter-proxy; do
+    if systemctl is-active --quiet $s; then
+      echo -e "$s: ${V}ACTIVO${N}"
+    else
+      echo -e "$s: ${R}INACTIVO${N}"
+    fi
+  done
+  pausa
+}
 
-echo ""
-
-# ── Instalar dependencias ──────────────────────────────────────
-echo -e "${PINK}[1/4]${NC} ${WHITE}Instalando dependencias...${NC}"
-(apt update -y -qq && apt install -y -qq curl wget git ufw bc) &> /dev/null &
-spinner $!
-
-# Node.js 18
-if! command -v node &>/dev/null; then
-    echo -e "  ${BLUE}▸${NC} Instalando Node.js 18..."
-    (curl -fsSL https://deb.nodesource.com/setup_18.x | bash - && apt install -y nodejs) &> /dev/null &
-    spinner $!
-fi
-echo -e "  ${GREEN}✓${NC} Node.js $(node -v)"
-
-# PM2
-if! command -v pm2 &>/dev/null; then
-    echo -e "  ${BLUE}▸${NC} Instalando PM2..."
-    npm install -g pm2 -q &> /dev/null &
-    spinner $!
-fi
-echo -e "  ${GREEN}✓${NC} PM2 instalado"
-
-# ── Crear directorio del sistema ───────────────────────────────
-echo -e "${PINK}[2/4]${NC} ${WHITE}Creando estructura...${NC}"
-loading_bar 0.3 "Preparando directorios"
-mkdir -p /opt/netgetk/{license-server/data,bot}
-
-# ── Descargar archivos ─────────────────────────────────────────
-REPO="https://raw.githubusercontent.com/NETGETK/NETGETK-Script/main"
-
-echo -e "  ${BLUE}▸${NC} Descargando license-server..."
-(wget -q -O /opt/netgetk/license-server/server.js "$REPO/license-server/server.js" && \
- wget -q -O /opt/netgetk/license-server/package.json "$REPO/license-server/package.json") &> /dev/null &
-spinner $!
-
-echo -e "  ${BLUE}▸${NC} Descargando bot..."
-(wget -q -O /opt/netgetk/bot/bot.js "$REPO/bot/bot.js" && \
- wget -q -O /opt/netgetk/bot/package.json "$REPO/bot/package.json") &> /dev/null &
-spinner $!
-
-# Si el repo no existe aún, crear los archivos localmente
-if [[! -s /opt/netgetk/license-server/server.js ]]; then
-    echo -e "  ${YELLOW}▸${NC} Repo no disponible, usando archivos locales..."
-    [[ -f /tmp/NETGETK/license-server/server.js ]] && \
-        cp -r /tmp/NETGETK/license-server/* /opt/netgetk/license-server/
-    [[ -f /tmp/NETGETK/bot/bot.js ]] && \
-        cp -r /tmp/NETGETK/bot/* /opt/netgetk/bot/
-fi
-
-# ── Guardar configuración en .env ─────────────────────────────
-cat > /opt/netgetk/license-server/.env << ENV
-PORT=$LIC_PORT
-ADMIN_TOKEN=$ADMIN_TOKEN
-ENV
-
-cat > /opt/netgetk/bot/.env << ENV
-BOT_TOKEN=$BOT_TOKEN
-ADMIN_IDS=$ADMIN_ID
-LICENSE_SERVER=http://127.0.0.1:$LIC_PORT
-ADMIN_TOKEN=$ADMIN_TOKEN
-ENV
-
-# Guardar config general
-cat > /opt/netgetk/config << CFG
-MY_IP=$MY_IP
-LIC_PORT=$LIC_PORT
-ADMIN_TOKEN=$ADMIN_TOKEN
-ADMIN_ID=$ADMIN_ID
-LICENSE_SERVER_URL=http://$MY_IP:$LIC_PORT
-INSTALLED=$(date +%Y-%m-%d)
-CFG
-
-chmod 600 /opt/netgetk/config /opt/netgetk/license-server/.env /opt/netgetk/bot/.env
-
-# ── Instalar dependencias npm ──────────────────────────────────
-echo -e "${PINK}[3/4]${NC} ${WHITE}Instalando paquetes npm...${NC}"
-(cd /opt/netgetk/license-server && npm install --silent) &> /dev/null &
-spinner $!
-echo -e "  ${GREEN}✓${NC} License server listo"
-(cd /opt/netgetk/bot && npm install --silent) &> /dev/null &
-spinner $!
-cd /etc/gtkvpn/panel && npm install --silent 2>/dev/null
-echo -e "  ${GREEN}✓${NC} Bot listo"
-
-# ── Iniciar con PM2 ───────────────────────────────────────────
-echo -e "${PINK}[4/4]${NC} ${WHITE}Iniciando servicios...${NC}"
-
-# License Server
-pm2 delete netgetk-license 2>/dev/null
-cd /opt/netgetk/license-server
-pm2 start server.js --name netgetk-license \
-    --env production \
-    --node-args "--env-file .env" 2>/dev/null || \
-pm2 start server.js --name netgetk-license 2>/dev/null
-
-sleep 2
-
-# Verificar que inició
-if pm2 list | grep -q "netgetk-license.*online"; then
-    echo -e "  ${GREEN}✓${NC} License Server corriendo en :$LIC_PORT"
-else
-    PORT=$LIC_PORT ADMIN_TOKEN=$ADMIN_TOKEN pm2 start server.js \
-        --name netgetk-license 2>/dev/null
-    sleep 2
-fi
-
-# Bot de Telegram
-pm2 delete netgetk-bot 2>/dev/null
-cd /opt/netgetk/bot
-BOT_TOKEN=$BOT_TOKEN ADMIN_IDS=$ADMIN_ID \
-LICENSE_SERVER="http://127.0.0.1:$LIC_PORT" \
-ADMIN_TOKEN=$ADMIN_TOKEN \
-pm2 start bot.js --name netgetk-bot 2>/dev/null
-
-sleep 3
-
-pm2 save 2>/dev/null
-pm2 startup 2>/dev/null | tail -1 | bash 2>/dev/null
-
-# ── Abrir puerto en UFW ────────────────────────────────────────
-loading_bar 0.4 "Configurando firewall"
-ufw allow $LIC_PORT/tcp 2>/dev/null
-ufw allow 22/tcp 2>/dev/null
-ufw --force enable 2>/dev/null
-
-# ── Guardar comando de instalación para clientes ───────────────
-LICENSE_URL="http://$MY_IP:$LIC_PORT"
-
-echo ""
-echo -e "${VIOLET}╔══════════════════════════════════════════════════════════════╗${NC}"
-echo -e "${VIOLET}║${NC}           ${WHITE}✓ JITTER PANEL SSH INSTALADO${NC}                   ${VIOLET}║${NC}"
-echo -e "${VIOLET}╠══════════════════════════════════════════════════════════════╣${NC}"
-echo -e "${VIOLET}║${NC}"
-echo -e "${VIOLET}║${NC}  ${WHITE}📡 License Server:${NC} ${CYAN}http://$MY_IP:$LIC_PORT${NC}"
-echo -e "${VIOLET}║${NC}  ${WHITE}🤖 Bot Telegram:${NC}   ${GREEN}Activo${NC}"
-echo -e "${VIOLET}║${NC}"
-echo -e "${VIOLET}╠══════════════════════════════════════════════════════════════╣${NC}"
-echo -e "${VIOLET}║${NC}  ${YELLOW}⚠  IMPORTANTE - Guarda esto:${NC}"
-echo -e "${VIOLET}║${NC}"
-echo -e "${VIOLET}║${NC}  ${BLUE}Admin Token:${NC} ${CYAN}$ADMIN_TOKEN${NC}"
-echo -e "${VIOLET}║${NC}  ${BLUE}License URL:${NC} ${CYAN}http://$MY_IP:$LIC_PORT${NC}"
-echo -e "${VIOLET}║${NC}"
-echo -e "${VIOLET}╠══════════════════════════════════════════════════════════════╣${NC}"
-echo -e "${VIOLET}║${NC}  ${WHITE}📝 Antes de subir a GitHub, edita script/setup:${NC}"
-echo -e "${VIOLET}║${NC}  ${CYAN}LICENSE_SERVER=\"http://$MY_IP:$LIC_PORT\"${NC}"
-echo -e "${VIOLET}║${NC}"
-echo -e "${VIOLET}║${NC}  ${WHITE}🤖 Prueba el bot en Telegram - escribe /stats${NC}"
-echo -e "${VIOLET}╚══════════════════════════════════════════════════════════════╝${NC}"
-echo ""
-
-# ── Crear comando 'jitter' ────────────────────────────────────
-cat > /usr/local/bin/jitter << 'CMD'
-#!/bin/bash
-PURPLE='\033[0;35m'; CYAN='\033[0;96m'; WHITE='\033[1;97m'; NC='\033[0m'
-echo ""
-echo -e "${PURPLE}█ JITTER PANEL SSH █${NC}"
-echo ""
-echo "  pm2 status              → ver servicios"
-echo "  pm2 logs netgetk-bot    → logs del bot"
-echo "  pm2 logs netgetk-license → logs del servidor"
-echo "  pm2 restart netgetk-bot → reiniciar bot"
-echo ""
-source /opt/netgetk/config 2>/dev/null
-echo -e "  ${CYAN}License Server:${NC} http://$MY_IP:$LIC_PORT"
-echo ""
-pm2 list --no-color | grep netgetk
-echo ""
-CMD
-chmod +x /usr/local/bin/jitter
-
-echo -e " ${CYAN}Usa el comando${NC} ${WHITE}jitter${NC} ${CYAN}para ver el estado del sistema${NC}"
-echo ""
+# -------- MENÚ PRINCIPAL --------
+while true; do
+  clear
+  IP=$(hostname -I | awk '{print $1}')
+  echo -e "${A}==================================${N}"
+  echo -e "${A}       JITTER SSH MANAGER${N}"
+  echo -e "${A}==================================${N}"
+  echo -e "${B} IP:${N} $IP"
+  echo -e "${A}----------------------------------${N}"
+  echo -e " ${V}1)${N} Crear usuario SSH"
+  echo -e " ${V}2)${N} Eliminar usuario"
+  echo -e " ${V}3)${N} Listar usuarios"
+  echo -e "${A}----------------------------------${N}"
+  echo -e " ${C}4)${N} Instalar Dropbear"
+  echo -e " ${C}5)${N} Instalar Proxy Python (WebSocket)"
+  echo -e " ${C}6)${N} Estado de servicios"
+  echo -e "${A}----------------------------------${N}"
+  echo -e " ${R}0)${N} Salir"
+  echo -e "${A}==================================${N}"
+  read -p "Elegí una opción: " op
+  case $op in
+    1) crear_usuario ;;
+    2) eliminar_usuario ;;
+    3) listar_usuarios ;;
+    4) instalar_dropbear ;;
+    5) instalar_proxy_python ;;
+    6) estado ;;
+    0) clear; exit 0 ;;
+    *) echo -e "${R}Opción inválida${N}"; sleep 1 ;;
+  esac
+done
