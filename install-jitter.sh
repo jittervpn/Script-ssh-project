@@ -13,18 +13,7 @@ exit 1
 
 apt-get update -y
 
-apt-get install -y 
-curl 
-wget 
-git 
-nano 
-vim 
-htop 
-tmux 
-screen 
-vnstat 
-net-tools 
-sudo
+apt-get install -y curl wget git nano vim htop tmux screen vnstat net-tools sudo
 
 mkdir -p /opt/jitter-manager
 mkdir -p /opt/jitter-manager/modules
