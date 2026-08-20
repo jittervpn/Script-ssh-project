@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="es" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Administración — JitterX Panel Cloud</title>
+<meta name="robots" content="noindex">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%23FFB020'/%3E%3Ctext x='16' y='23' font-family='monospace' font-size='19' font-weight='bold' text-anchor='middle' fill='%230B1020'%3EJ%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,700;12..96,800&family=Inter+Tight:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/styles.css">
+</head>
+<body>
+
+<div class="app">
+  <aside class="side">
+    <a class="brand" href="dashboard.html">
+      <span class="brand__mark">J</span>
+      <span>JitterX<span class="brand__sub">administración</span></span>
+    </a>
+    <nav class="side__nav">
+      <div class="side__group-label">Administración</div>
+      <div class="nav-item is-active" data-view="pulse" tabindex="0" role="button">Estado del servicio</div>
+      <div class="nav-item" data-view="users" tabindex="0" role="button">Usuarios</div>
+      <div class="nav-item" data-view="records" tabindex="0" role="button">Todos los registros</div>
+      <div class="nav-item" data-view="audit" tabindex="0" role="button">Auditoría</div>
+      <div class="side__group-label">Volver</div>
+      <a class="nav-item" href="dashboard.html">Mi panel</a>
+    </nav>
+    <div class="side__foot">
+      <div class="user-chip">
+        <div class="avatar" id="userAvatar">A</div>
+        <div style="min-width:0">
+          <div class="user-chip__name" id="userName">—</div>
+          <div class="user-chip__mail" id="userMail">—</div>
+        </div>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main">
+    <header class="topbar">
+      <button class="icon-btn side__toggle" id="sideToggle" aria-label="Menú"></button>
+      <h1 class="topbar__title" id="viewTitle">Estado del servicio</h1>
+      <div class="topbar__spacer"></div>
+      <div class="search">
+        <span id="i-search"></span>
+        <input class="input" id="adminSearch" type="search" placeholder="Buscar usuario o host…">
+      </div>
+      <button class="icon-btn" id="langToggle" style="font-family:var(--mono);font-size:11px;font-weight:600">ES</button>
+      <button class="icon-btn" id="themeToggle" aria-label="Cambiar tema"></button>
+    </header>
+
+    <section class="view" id="view-pulse">
+      <div class="view__head">
+        <div><h2>Estado del servicio</h2><p>Cómo va la zona <b data-root-domain></b> en conjunto.</p></div>
+        <button class="btn btn--sm" id="exportBtn" style="margin-left:auto">Exportar CSV</button>
+      </div>
+      <div class="grid grid--4" id="adminStats" style="margin-bottom:22px"></div>
+      <div class="card">
+        <div class="card__title">Caducidades de los próximos 7 días</div>
+        <p class="card__desc">Cuántos registros se borrarán cada día si nadie los renueva.</p>
+        <div id="expiryChart"></div>
+      </div>
+    </section>
+
+    <section class="view" id="view-users" hidden>
+      <div class="view__head"><div><h2>Usuarios</h2><p>Cuentas registradas y lo que ocupan.</p></div></div>
+      <div class="table-wrap"><table class="data" id="usersTable"></table></div>
+    </section>
+
+    <section class="view" id="view-records" hidden>
+      <div class="view__head"><div><h2>Todos los registros</h2><p>Cada subdominio de la zona, de quién es y cuándo caduca.</p></div></div>
+      <div class="table-wrap"><table class="data" id="recordsTable"></table></div>
+    </section>
+
+    <section class="view" id="view-audit" hidden>
+      <div class="view__head"><div><h2>Auditoría</h2><p>Todo lo que ha pasado en el servicio.</p></div></div>
+      <div class="card" id="auditLog"></div>
+    </section>
+  </div>
+</div>
+
+<script src="assets/js/config.js"></script>
+<script src="assets/js/core.js"></script>
+<script src="assets/js/api.js"></script>
+<script src="assets/js/admin.js"></script>
+</body>
+</html>

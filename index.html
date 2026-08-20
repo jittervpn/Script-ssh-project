@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="es" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>JitterX Panel Cloud — subdominios en 20 segundos</title>
+<meta name="description" content="Reserva un subdominio real, apúntalo a donde quieras y gestiónalo durante 7 días. Sin tarjeta.">
+<meta name="theme-color" content="#0B1020">
+<meta property="og:title" content="JitterX Panel Cloud">
+<meta property="og:description" content="Subdominios reales en 20 segundos, sin tarjeta.">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%23FFB020'/%3E%3Ctext x='16' y='23' font-family='monospace' font-size='19' font-weight='bold' text-anchor='middle' fill='%230B1020'%3EJ%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,700;12..96,800&family=Inter+Tight:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/styles.css">
+</head>
+<body>
+
+<main class="gate">
+
+  <section class="gate__pitch">
+
+    <header style="display:flex;align-items:center;gap:12px">
+      <div class="brand">
+        <span class="brand__mark">J</span>
+        <span>JitterX<span class="brand__sub">panel cloud</span></span>
+      </div>
+      <div style="margin-left:auto;display:flex;gap:8px">
+        <button class="icon-btn" id="langToggle" aria-label="Cambiar idioma" style="font-family:var(--mono);font-size:11px;font-weight:600">ES</button>
+        <button class="icon-btn" id="themeToggle" aria-label="Cambiar tema"></button>
+      </div>
+    </header>
+
+    <div class="hero">
+      <p class="eyebrow">Zona gestionada en Cloudflare</p>
+      <h1>Tu subdominio, escrito en la zona <em>en 20 segundos</em>.</h1>
+      <p>Eliges el nombre, apuntas el registro a donde quieras y lo tienes vivo durante <b data-trial-days>7</b> días. Renuevas cuando quieras desde el panel.</p>
+    </div>
+
+    <div class="console" aria-hidden="true">
+      <div class="console__bar">
+        <span class="console__dot"></span><span class="console__dot"></span><span class="console__dot"></span>
+        <span style="margin-left:8px" data-root-domain>tudominio.com</span>
+        <span style="margin-left:auto">zona · registro nuevo</span>
+      </div>
+      <div class="console__body">
+        <div class="console__line console__c">; $ORIGIN <span data-root-domain>tudominio.com</span>.</div>
+        <div class="console__line console__c">; TTL 300   proxy on</div>
+        <div class="console__line"><span class="console__h" id="typeHost"></span><span class="caret"></span></div>
+        <div class="console__line console__c" id="typeNote"></div>
+      </div>
+    </div>
+
+    <div class="feature-grid">
+      <div class="feature">
+        <h4>A, AAAA, CNAME y TXT</h4>
+        <p>Apunta a una IP, a un host de Vercel o Netlify, o verifica un servicio con TXT.</p>
+      </div>
+      <div class="feature">
+        <h4>Cuenta atrás visible</h4>
+        <p>Cada subdominio lleva su anillo de caducidad. Nada desaparece sin avisar.</p>
+      </div>
+      <div class="feature">
+        <h4>Renovación en un clic</h4>
+        <p>Cuando quedan <b data-renew-days>3</b> días o menos, el botón de renovar se activa solo.</p>
+      </div>
+      <div class="feature">
+        <h4>Proxy de Cloudflare</h4>
+        <p>Actívalo y obtienes HTTPS y protección sin configurar nada.</p>
+      </div>
+    </div>
+
+    <p style="margin:0;font-size:12px;color:var(--paper-3);font-family:var(--mono)">
+      JitterX Panel Cloud · <span id="modeNote"></span>
+    </p>
+  </section>
+
+  <section class="gate__form">
+    <div class="auth-card">
+
+      <h2 style="font-size:24px;margin-bottom:6px">Entra al panel</h2>
+      <p style="color:var(--paper-2);font-size:14px;margin:0 0 22px">
+        Crea una cuenta o accede para gestionar tus subdominios.
+      </p>
+
+      <div class="tabs" role="tablist">
+        <button class="tab is-active" data-tab="login" role="tab">Entrar</button>
+        <button class="tab" data-tab="register" role="tab">Crear cuenta</button>
+      </div>
+
+      <form id="loginForm" novalidate>
+        <div class="field">
+          <label class="field__label" for="li-email">Correo</label>
+          <input class="input" id="li-email" type="email" autocomplete="email" placeholder="tu@correo.com" required>
+        </div>
+        <div class="field">
+          <label class="field__label" for="li-pass">Contraseña</label>
+          <input class="input" id="li-pass" type="password" autocomplete="current-password" placeholder="••••••••" required>
+        </div>
+        <p class="field__error" id="loginError"></p>
+        <button class="btn btn--primary btn--block" type="submit" id="loginBtn">Entrar al panel</button>
+      </form>
+
+      <form id="registerForm" hidden novalidate>
+        <div class="field">
+          <label class="field__label" for="rg-name">Cómo te llamamos</label>
+          <input class="input" id="rg-name" type="text" autocomplete="name" placeholder="Álex" required>
+        </div>
+        <div class="field">
+          <label class="field__label" for="rg-email">Correo</label>
+          <input class="input" id="rg-email" type="email" autocomplete="email" placeholder="tu@correo.com" required>
+        </div>
+        <div class="field">
+          <label class="field__label" for="rg-pass">Contraseña</label>
+          <input class="input" id="rg-pass" type="password" autocomplete="new-password" placeholder="Mínimo 8 caracteres" required>
+          <div class="meter" style="margin-top:8px"><div class="meter__fill" id="pwMeter" style="width:0"></div></div>
+          <p class="field__hint" id="pwHint">Mezcla mayúsculas, números y algún símbolo.</p>
+        </div>
+        <label class="switch" style="margin:4px 0 14px">
+          <input type="checkbox" id="rg-terms">
+          <span class="switch__track"></span>
+          <span style="font-size:13px;color:var(--paper-2)">Acepto que los subdominios caducan a los <b data-trial-days>7</b> días.</span>
+        </label>
+        <p class="field__error" id="registerError"></p>
+        <button class="btn btn--primary btn--block" type="submit" id="registerBtn">Crear mi cuenta</button>
+      </form>
+
+      <div class="divider">o</div>
+
+      <div class="notice notice--pulse" id="demoNotice" hidden>
+        <div>
+          <strong>Modo demostración.</strong>
+          Todo se guarda en este navegador y no se toca DNS de verdad. Para conectarlo a Cloudflare, rellena <code>apiBase</code> en <code>assets/js/config.js</code>.
+          <button class="btn btn--sm btn--ghost" id="fillDemo" style="margin-top:9px">Rellenar cuenta de prueba</button>
+        </div>
+      </div>
+
+    </div>
+  </section>
+</main>
+
+<script src="assets/js/config.js"></script>
+<script src="assets/js/core.js"></script>
+<script src="assets/js/api.js"></script>
+<script src="assets/js/auth.js"></script>
+</body>
+</html>

@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="es" data-theme="dark">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Panel — JitterX Panel Cloud</title>
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#0B1020">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%23FFB020'/%3E%3Ctext x='16' y='23' font-family='monospace' font-size='19' font-weight='bold' text-anchor='middle' fill='%230B1020'%3EJ%3C/text%3E%3C/svg%3E">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,700;12..96,800&family=Inter+Tight:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="assets/css/styles.css">
+</head>
+<body>
+
+<div class="app">
+
+  <aside class="side">
+    <a class="brand" href="dashboard.html">
+      <span class="brand__mark">J</span>
+      <span>JitterX<span class="brand__sub">panel cloud</span></span>
+    </a>
+
+    <nav class="side__nav">
+      <div class="side__group-label">Panel</div>
+      <div class="nav-item is-active" data-view="overview" tabindex="0" role="button"><span id="i-grid"></span>Resumen</div>
+      <div class="nav-item" data-view="subdomains" tabindex="0" role="button"><span id="i-globe"></span>Subdominios<span class="nav-item__badge" id="navCount">0</span></div>
+      <div class="nav-item" data-view="activity" tabindex="0" role="button"><span id="i-pulse"></span>Actividad</div>
+
+      <div class="side__group-label">Cuenta</div>
+      <div class="nav-item" data-view="settings" tabindex="0" role="button"><span id="i-cog"></span>Ajustes</div>
+      <div class="nav-item" data-view="help" tabindex="0" role="button"><span id="i-book"></span>Ayuda</div>
+      <a class="nav-item" href="admin.html" id="adminLink" hidden><span id="i-shield"></span>Administración</a>
+    </nav>
+
+    <div class="side__foot">
+      <div class="card" style="padding:13px;margin-bottom:12px">
+        <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--paper-3);margin-bottom:7px">
+          <span style="font-family:var(--mono)">CUOTA</span>
+          <span class="mono" id="quotaText">0/0</span>
+        </div>
+        <div class="meter"><div class="meter__fill" id="quotaBar" style="width:0"></div></div>
+      </div>
+      <div class="user-chip">
+        <div class="avatar" id="userAvatar">?</div>
+        <div style="min-width:0">
+          <div class="user-chip__name" id="userName">—</div>
+          <div class="user-chip__mail" id="userMail" style="overflow:hidden;text-overflow:ellipsis">—</div>
+        </div>
+        <button class="icon-btn" id="logoutBtn" title="Cerrar sesión" style="margin-left:auto;width:30px;height:30px"></button>
+      </div>
+    </div>
+  </aside>
+
+  <div class="main">
+
+    <header class="topbar">
+      <button class="icon-btn side__toggle" id="sideToggle" aria-label="Menú"></button>
+      <h1 class="topbar__title" id="viewTitle">Resumen</h1>
+      <div class="topbar__spacer"></div>
+      <div class="search" id="searchWrap" hidden>
+        <span id="i-search"></span>
+        <input class="input" id="searchInput" type="search" placeholder="Buscar subdominio…">
+      </div>
+      <button class="icon-btn" id="langToggle" style="font-family:var(--mono);font-size:11px;font-weight:600">ES</button>
+      <button class="icon-btn" id="themeToggle" aria-label="Cambiar tema"></button>
+      <button class="btn btn--primary btn--sm" id="newBtn">Crear subdominio</button>
+    </header>
+
+    <section class="view" id="view-overview">
+      <div class="view__head">
+        <div>
+          <h2 id="greeting">Hola</h2>
+          <p>Estado de tus subdominios en <b data-root-domain></b>. Cada uno vive <b data-trial-days></b> días desde que se crea.</p>
+        </div>
+      </div>
+
+      <div class="grid grid--4" id="statsRow" style="margin-bottom:22px"></div>
+
+      <div class="grid grid--2" style="align-items:start">
+        <div class="card">
+          <div class="card__title">Caduca antes</div>
+          <p class="card__desc">Lo primero que deberías renovar.</p>
+          <div id="soonList"></div>
+        </div>
+        <div class="card">
+          <div class="card__title">Últimos movimientos</div>
+          <p class="card__desc">Lo que ha pasado en tu cuenta.</p>
+          <div id="miniLog"></div>
+        </div>
+      </div>
+    </section>
+
+    <section class="view" id="view-subdomains" hidden>
+      <div class="view__head">
+        <div>
+          <h2>Tus subdominios</h2>
+          <p>Cada línea es el registro tal y como está escrito en la zona.</p>
+        </div>
+        <div style="display:flex;gap:8px;margin-left:auto">
+          <select class="select" id="filterState" style="width:auto">
+            <option value="">Todos los estados</option>
+            <option value="active">Activos</option>
+            <option value="expiring">Caducan pronto</option>
+            <option value="expired">Caducados</option>
+            <option value="pending">Propagando</option>
+          </select>
+          <button class="btn btn--sm" id="refreshBtn">Actualizar</button>
+        </div>
+      </div>
+      <div class="zone-list" id="zoneList"></div>
+    </section>
+
+    <section class="view" id="view-activity" hidden>
+      <div class="view__head">
+        <div><h2>Actividad</h2><p>Registro de todo lo que se ha hecho con tu cuenta y tus subdominios.</p></div>
+      </div>
+      <div class="card" id="fullLog"></div>
+    </section>
+
+    <section class="view" id="view-settings" hidden>
+      <div class="view__head">
+        <div><h2>Ajustes</h2><p>Tu cuenta y tus preferencias del panel.</p></div>
+      </div>
+
+      <div class="grid grid--2" style="align-items:start">
+        <div class="card">
+          <div class="card__title">Cuenta</div>
+          <p class="card__desc">Estos datos identifican tus subdominios.</p>
+          <dl class="kv" id="accountKv"></dl>
+        </div>
+
+        <div class="card">
+          <div class="card__title">Cambiar contraseña</div>
+          <p class="card__desc">Usa la nueva en tu próximo acceso.</p>
+          <form id="pwForm">
+            <div class="field">
+              <label class="field__label" for="pw-cur">Contraseña actual</label>
+              <input class="input" id="pw-cur" type="password" autocomplete="current-password">
+            </div>
+            <div class="field">
+              <label class="field__label" for="pw-new">Contraseña nueva</label>
+              <input class="input" id="pw-new" type="password" autocomplete="new-password">
+            </div>
+            <p class="field__error" id="pwError"></p>
+            <button class="btn btn--pulse" type="submit">Guardar contraseña</button>
+          </form>
+        </div>
+
+        <div class="card">
+          <div class="card__title">Preferencias</div>
+          <p class="card__desc">Se guardan en este navegador.</p>
+          <label class="switch" style="margin-bottom:14px">
+            <input type="checkbox" id="prefTheme"><span class="switch__track"></span>
+            <span style="font-size:13.5px">Tema claro</span>
+          </label>
+          <label class="switch" style="margin-bottom:14px">
+            <input type="checkbox" id="prefLang"><span class="switch__track"></span>
+            <span style="font-size:13.5px">Interfaz en inglés</span>
+          </label>
+          <label class="switch">
+            <input type="checkbox" id="prefWarn" checked><span class="switch__track"></span>
+            <span style="font-size:13.5px">Avisarme al abrir si algo caduca en 24 h</span>
+          </label>
+        </div>
+
+        <div class="card">
+          <div class="card__title">Zona delicada</div>
+          <p class="card__desc">Acciones que no se pueden deshacer.</p>
+          <button class="btn btn--danger" id="releaseAllBtn">Liberar todos mis subdominios</button>
+          <div id="demoResetWrap" hidden style="margin-top:12px">
+            <button class="btn btn--danger" id="resetDemoBtn">Borrar los datos de la demostración</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section class="view" id="view-help" hidden>
+      <div class="view__head">
+        <div><h2>Ayuda</h2><p>Lo que suele preguntar la gente antes de crear su primer subdominio.</p></div>
+      </div>
+      <div class="grid grid--2" style="align-items:start" id="helpGrid"></div>
+    </section>
+
+  </div>
+</div>
+
+<script src="assets/js/config.js"></script>
+<script src="assets/js/core.js"></script>
+<script src="assets/js/api.js"></script>
+<script src="assets/js/dashboard.js"></script>
+</body>
+</html>
