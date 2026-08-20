@@ -1,0 +1,33 @@
+name = "jitterx-api"
+main = "src/index.js"
+compatibility_date = "2024-11-01"
+
+# ── Ajustes públicos ──────────────────────────────────────────
+[vars]
+ROOT_DOMAIN = "tudominio.com"
+TRIAL_DAYS = "7"
+MAX_PER_USER = "3"
+RENEWAL_WINDOW_DAYS = "3"
+MAX_RENEWALS = "4"
+
+# Origen que puede llamar a esta API. Pon la URL exacta de tu
+# GitHub Pages para que nadie más pueda usar tu backend.
+# Ejemplo: "https://tu-usuario.github.io"
+ALLOWED_ORIGIN = "*"
+
+# Correos que entran como administración (separados por comas)
+ADMIN_EMAILS = "tu@correo.com"
+
+# Nombres extra que quieres bloquear, separados por comas
+EXTRA_BLOCKED = ""
+
+# ── Almacén ───────────────────────────────────────────────────
+# Crea el namespace con:  npx wrangler kv namespace create DB
+# y pega aquí el id que te devuelve.
+[[kv_namespaces]]
+binding = "DB"
+id = "PEGA_AQUI_EL_ID_DEL_KV"
+
+# ── Limpieza automática de caducados ──────────────────────────
+[triggers]
+crons = ["0 * * * *"]   # cada hora en punto
