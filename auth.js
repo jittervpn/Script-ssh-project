@@ -1,142 +1,61 @@
-/* ============================================================
-   JitterX Panel Cloud — portada y acceso
-   ============================================================ */
+// Registro, login y sesiones. Contraseñas con scrypt (nativo de Node, sin dependencias).
+import crypto from "node:crypto";
+import { db } from "./db.js";
 
-mountChrome();
+const SESSION_DAYS = 30;
+const COOKIE = "jx_session";
 
-const existing = Session.get();
-if (existing && existing.token) location.replace("dashboard.html");
-
-/* ---------- Consola: escribe registros de zona en bucle ---------- */
-const SAMPLES = [
-  { host: "mi-demo", type: "A",     value: "203.0.113.42",         note: "; apunta a tu VPS" },
-  { host: "tienda",  type: "CNAME", value: "mi-tienda.vercel.app", note: "; apunta a tu despliegue" },
-  { host: "api-v2",  type: "A",     value: "198.51.100.7",         note: "; proxy naranja activado" },
-  { host: "verify",  type: "TXT",   value: '"jitterx-site=ok"',    note: "; verificación de servicio" }
-];
-
-const hostEl = document.getElementById("typeHost");
-const noteEl = document.getElementById("typeNote");
-const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-
-function renderLine(s, typed) {
-  const pad = " ".repeat(Math.max(1, 20 - typed.length - CFG.rootDomain.length));
-  hostEl.innerHTML =
-    '<span class="console__h">' + escapeHtml(typed) + "." + escapeHtml(CFG.rootDomain) + '.</span>' + pad +
-    '<span class="console__c">IN</span>  <span class="console__k">' + s.type + '</span>  ' +
-    '<span class="console__v">' + escapeHtml(s.value) + '</span>';
-}
-
-async function typeLoop() {
-  if (!hostEl) return;
-  const sleep = ms => new Promise(r => setTimeout(r, ms));
-  if (reduceMotion) {
-    renderLine(SAMPLES[0], SAMPLES[0].host);
-    noteEl.textContent = SAMPLES[0].note;
-    return;
-  }
-  let i = 0;
-  while (true) {
-    const s = SAMPLES[i % SAMPLES.length];
-    noteEl.textContent = "";
-    for (let c = 1; c <= s.host.length; c++) { renderLine(s, s.host.slice(0, c)); await sleep(85); }
-    await sleep(320);
-    noteEl.textContent = s.note;
-    await sleep(2400);
-    for (let c = s.host.length; c >= 0; c--) { renderLine(s, s.host.slice(0, c)); await sleep(35); }
-    noteEl.textContent = "";
-    i++;
-  }
-}
-typeLoop();
-
-/* ---------- Pestañas ---------- */
-const loginForm = $("#loginForm");
-const registerForm = $("#registerForm");
-
-$$(".tab").forEach(tab => tab.addEventListener("click", () => {
-  $$(".tab").forEach(x => x.classList.toggle("is-active", x === tab));
-  const isLogin = tab.dataset.tab === "login";
-  loginForm.hidden = !isLogin;
-  registerForm.hidden = isLogin;
-  $("#loginError").textContent = "";
-  $("#registerError").textContent = "";
-}));
-
-/* ---------- Fuerza de contraseña ---------- */
-const pwColors = ["var(--alert)", "var(--alert)", "var(--signal)", "var(--live)", "var(--live)"];
-const pwWords = {
-  es: ["muy débil", "débil", "aceptable", "buena", "excelente"],
-  en: ["very weak", "weak", "fair", "good", "excellent"]
+export const hashPassword = (plain) => {
+  const salt = crypto.randomBytes(16).toString("hex");
+  return `${salt}:${crypto.scryptSync(plain, salt, 64).toString("hex")}`;
 };
-const pwInput = $("#rg-pass");
-if (pwInput) pwInput.addEventListener("input", e => {
-  const v = e.target.value;
-  const score = passwordScore(v);
-  const meter = $("#pwMeter");
-  meter.style.width = v ? ((score + 1) * 20) + "%" : "0";
-  meter.style.background = pwColors[score];
-  $("#pwHint").textContent = v
-    ? "Fuerza: " + (pwWords[LANG] || pwWords.es)[score] + "."
-    : "Mezcla mayúsculas, números y algún símbolo.";
-});
 
-/* ---------- Envíos ---------- */
-function busy(btn, on, label) {
-  btn.disabled = on;
-  btn.innerHTML = on ? '<span class="spinner"></span> Un momento…' : label;
+export const verifyPassword = (plain, stored) => {
+  try {
+    const [salt, hash] = String(stored).split(":");
+    return crypto.timingSafeEqual(Buffer.from(hash, "hex"), crypto.scryptSync(plain, salt, 64));
+  } catch {
+    return false;
+  }
+};
+
+const sha = (v) => crypto.createHash("sha256").update(v).digest("hex");
+
+export function getCookie(req, name) {
+  const m = (req.headers.cookie || "").match(new RegExp("(?:^|;\\s*)" + name + "=([^;]+)"));
+  return m ? m[1] : null;
 }
 
-loginForm.addEventListener("submit", async e => {
-  e.preventDefault();
-  const btn = $("#loginBtn"), err = $("#loginError");
-  err.textContent = "";
-  const email = $("#li-email").value.trim();
-  const password = $("#li-pass").value;
-  if (!email || !password) { err.textContent = "Rellena los dos campos."; return; }
-  busy(btn, true);
-  try {
-    const s = await API.login({ email: email, password: password });
-    Session.set(s);
-    location.href = "dashboard.html";
-  } catch (ex) {
-    err.textContent = ex.message;
-    busy(btn, false, "Entrar al panel");
-  }
-});
-
-registerForm.addEventListener("submit", async e => {
-  e.preventDefault();
-  const btn = $("#registerBtn"), err = $("#registerError");
-  err.textContent = "";
-  const name = $("#rg-name").value.trim();
-  const email = $("#rg-email").value.trim();
-  const password = $("#rg-pass").value;
-  if (!$("#rg-terms").checked) { err.textContent = "Confirma que aceptas la caducidad."; return; }
-  if (password.length < 8) { err.textContent = "La contraseña necesita 8 caracteres como mínimo."; return; }
-  busy(btn, true);
-  try {
-    const s = await API.register({ name: name, email: email, password: password });
-    Session.set(s);
-    toast("Cuenta creada", "Ya puedes reservar tu primer subdominio.", "ok");
-    setTimeout(() => location.href = "dashboard.html", 500);
-  } catch (ex) {
-    err.textContent = ex.message;
-    busy(btn, false, "Crear mi cuenta");
-  }
-});
-
-/* ---------- Modo demostración ---------- */
-const modeNote = $("#modeNote");
-if (API.demo) {
-  $("#demoNotice").hidden = false;
-  modeNote.textContent = "modo demostración · sin backend conectado";
-  $("#fillDemo").addEventListener("click", () => {
-    $$(".tab").filter(t => t.dataset.tab === "login")[0].click();
-    $("#li-email").value = CFG.demoAdminEmail;
-    $("#li-pass").value = CFG.demoAdminPassword;
-    toast("Cuenta de prueba lista", "Pulsa Entrar al panel.", "info");
+export async function createSession(res, req, usuarioId) {
+  const token = crypto.randomBytes(32).toString("hex");
+  await db.insert("sesiones", {
+    token: sha(token),
+    usuario_id: usuarioId,
+    expira_en: new Date(Date.now() + SESSION_DAYS * 864e5).toISOString(),
+    ip: (req.headers["x-forwarded-for"] || "").split(",")[0].trim() || null,
+    agente: (req.headers["user-agent"] || "").slice(0, 200),
   });
-} else {
-  modeNote.textContent = "conectado a " + CFG.apiBase.replace(/^https?:\/\//, "");
+  res.setHeader("set-cookie",
+    `${COOKIE}=${token}; Path=/; Max-Age=${SESSION_DAYS * 86400}; HttpOnly; Secure; SameSite=Lax`);
 }
+
+export async function currentUser(req) {
+  const raw = getCookie(req, COOKIE);
+  if (!raw) return null;
+  const sesion = await db.one("sesiones", { token: `eq.${sha(raw)}` }, "usuario_id,expira_en");
+  if (!sesion) return null;
+  if (new Date(sesion.expira_en) < new Date()) {
+    await db.remove("sesiones", { token: `eq.${sha(raw)}` }).catch(() => {});
+    return null;
+  }
+  const user = await db.one("usuarios", { id: `eq.${sesion.usuario_id}` }, "id,email,nombre,bloqueado,creado_en");
+  return user && !user.bloqueado ? user : null;
+}
+
+export async function destroySession(res, req) {
+  const raw = getCookie(req, COOKIE);
+  if (raw) await db.remove("sesiones", { token: `eq.${sha(raw)}` }).catch(() => {});
+  res.setHeader("set-cookie", `${COOKIE}=; Path=/; Max-Age=0; HttpOnly; Secure; SameSite=Lax`);
+}
+
+export const validEmail = (e) => /^[^\s@]+@[^\s@]+\.[a-z]{2,}$/i.test(e);

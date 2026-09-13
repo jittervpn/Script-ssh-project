@@ -1,145 +1,569 @@
 <!doctype html>
-<html lang="es" data-theme="dark">
+<html lang="es">
 <head>
 <meta charset="utf-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>JitterX Panel Cloud — subdominios en 20 segundos</title>
-<meta name="description" content="Reserva un subdominio real, apúntalo a donde quieras y gestiónalo durante 7 días. Sin tarjeta.">
-<meta name="theme-color" content="#0B1020">
-<meta property="og:title" content="JitterX Panel Cloud">
-<meta property="og:description" content="Subdominios reales en 20 segundos, sin tarjeta.">
-<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%23FFB020'/%3E%3Ctext x='16' y='23' font-family='monospace' font-size='19' font-weight='bold' text-anchor='middle' fill='%230B1020'%3EJ%3C/text%3E%3C/svg%3E">
-<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin><link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,700;12..96,800&family=Inter+Tight:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="assets/css/styles.css">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#0a0f1c">
+<title>Jitterx Panel Cloud — Subdominios temporales para tu VPS</title>
+<meta name="description" content="Apunta un subdominio a la IP de tu VPS en segundos. Registro A gratuito durante 7 días.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#0a0f1c; --bg2:#0e1526; --card:#111a2e; --card2:#15203a; --line:#1f2c49; --line2:#2b3a5e;
+    --ink:#eef2fb; --ink2:#aab6d3; --muted:#6b7a9c;
+    --accent:#22d3ee; --accent2:#0ea5e9; --ok:#34d399; --err:#fb7185; --warn:#fbbf24;
+    --r:16px; --r2:10px; --shadow:0 20px 50px rgba(0,0,0,.35);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html{-webkit-text-size-adjust:100%}
+  html,body{max-width:100%;overflow-x:hidden}
+  body{background:var(--bg);color:var(--ink);font:15px/1.6 Inter,system-ui,-apple-system,"Segoe UI",sans-serif;min-height:100vh;min-height:100dvh;display:flex;flex-direction:column}
+  body::before{content:"";position:fixed;inset:0;z-index:-1;pointer-events:none;
+    background:
+      radial-gradient(900px 500px at 85% -10%,rgba(34,211,238,.12),transparent 60%),
+      radial-gradient(700px 500px at -10% 110%,rgba(14,165,233,.08),transparent 60%),
+      linear-gradient(var(--bg2) 1px,transparent 1px) 0 0/100% 56px,
+      linear-gradient(90deg,var(--bg2) 1px,transparent 1px) 0 0/56px 100%}
+  a{color:inherit}
+  .mono{font-family:"JetBrains Mono",ui-monospace,monospace}
+
+  /* ---------- nav ---------- */
+  .nav{position:sticky;width:100%;top:0;z-index:10;backdrop-filter:blur(14px);background:rgba(10,15,28,.75);border-bottom:1px solid var(--line)}
+  .nav .in{max-width:1100px;margin:0 auto;padding:0 20px;height:64px;display:flex;align-items:center;justify-content:space-between;gap:16px}
+  .logo{display:flex;align-items:center;gap:10px;font-weight:800;letter-spacing:-.02em;font-size:17px;text-decoration:none}
+  .logo i{width:34px;height:34px;border-radius:9px;display:grid;place-items:center;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#04121a;font-style:normal;font-weight:800;font-size:15px;box-shadow:0 6px 18px rgba(34,211,238,.35)}
+  .logo small{display:block;font-size:11px;font-weight:500;color:var(--muted);letter-spacing:.12em;text-transform:uppercase;margin-top:-2px}
+  .status{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--ink2);white-space:nowrap}
+  .status b{width:8px;height:8px;border-radius:50%;background:var(--muted);box-shadow:0 0 0 3px rgba(107,122,156,.2)}
+  .status.on b{background:var(--ok);box-shadow:0 0 0 3px rgba(52,211,153,.2)}
+  .status.off b{background:var(--err);box-shadow:0 0 0 3px rgba(251,113,133,.2)}
+  @media(max-width:480px){.status span{display:none}}
+
+  /* ---------- layout ---------- */
+  main{flex:1;max-width:1100px;width:100%;margin:0 auto;padding:36px 20px 56px}
+  .hero{margin-bottom:28px}
+  .eyebrow{display:inline-flex;max-width:100%;align-items:center;gap:8px;font-size:12px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--accent);padding:6px 12px;border:1px solid rgba(34,211,238,.3);border-radius:999px;background:rgba(34,211,238,.06);margin-bottom:14px}
+  h1{font-size:clamp(26px,5vw,44px);overflow-wrap:anywhere;line-height:1.1;letter-spacing:-.03em;font-weight:800;max-width:720px}
+  h1 span{background:linear-gradient(90deg,var(--accent),#7dd3fc);-webkit-background-clip:text;background-clip:text;color:transparent}
+  .lead{color:var(--ink2);max-width:620px;margin-top:12px;font-size:16px}
+
+  .stats{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin:26px 0}
+  .stat{min-width:0;background:var(--card);border:1px solid var(--line);border-radius:var(--r2);padding:14px 16px}
+  .stat label{display:block;font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+  .stat b{display:block;font-size:26px;font-weight:800;letter-spacing:-.02em;margin-top:2px;font-variant-numeric:tabular-nums}
+  .stat .bar{height:5px;border-radius:3px;background:var(--line);overflow:hidden;margin-top:10px}
+  .stat .bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--accent),var(--accent2));transition:width .7s cubic-bezier(.2,.8,.2,1)}
+  @media(max-width:640px){.stats{grid-template-columns:1fr 1fr}.stat:last-child{grid-column:1/-1}}
+
+  .grid{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,.85fr);gap:20px;align-items:start}
+  @media(max-width:860px){.grid{grid-template-columns:1fr}}
+  .card{min-width:0;background:var(--card);border:1px solid var(--line);border-radius:var(--r);padding:26px;box-shadow:var(--shadow)}
+  @media(max-width:480px){.card{padding:20px}}
+  .card h2{font-size:18px;font-weight:700;letter-spacing:-.01em;display:flex;align-items:center;gap:10px;margin-bottom:6px}
+  .card h2 svg{width:20px;height:20px;color:var(--accent);flex:none}
+  .card p.sub{color:var(--muted);font-size:14px;margin-bottom:18px}
+
+  /* ---------- form ---------- */
+  .f{margin-top:16px}
+  .f label{display:block;font-size:13px;font-weight:600;color:var(--ink2);margin-bottom:7px}
+  .field{display:flex;align-items:stretch;background:var(--bg2);border:1px solid var(--line2);border-radius:var(--r2);overflow:hidden;transition:border-color .15s,box-shadow .15s}
+  .field:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px rgba(34,211,238,.18)}
+  .field input{flex:1;min-width:0;background:transparent;border:0;outline:0;color:var(--ink);padding:13px 14px;font:500 15px "JetBrains Mono",monospace}
+  .field input::placeholder{color:var(--muted)}
+  .field .sfx{display:flex;align-items:center;padding:0 14px;color:var(--ink2);font:500 14px "JetBrains Mono",monospace;background:var(--card2);border-left:1px solid var(--line2);white-space:nowrap;flex:0 1 auto;min-width:0;overflow:hidden;text-overflow:ellipsis;font-size:13px}
+  .hint{font-size:12px;color:var(--muted);margin-top:6px}
+  .preview{margin-top:16px;padding:12px 14px;border-radius:var(--r2);background:var(--bg2);border:1px dashed var(--line2);font-size:13px;color:var(--muted);display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  .preview code{min-width:0;font-family:"JetBrains Mono",monospace;color:var(--ink);font-size:13px;word-break:break-all}
+  .preview .arrow{color:var(--accent)}
+  button.primary{margin-top:20px;width:100%;padding:15px 18px;border:0;border-radius:var(--r2);cursor:pointer;font:700 15px Inter,sans-serif;color:#04121a;background:linear-gradient(135deg,var(--accent),var(--accent2));box-shadow:0 8px 24px rgba(34,211,238,.28);transition:transform .12s,box-shadow .12s,opacity .2s;display:flex;align-items:center;justify-content:center;gap:10px}
+  button.primary:hover:not(:disabled){transform:translateY(-1px);box-shadow:0 12px 30px rgba(34,211,238,.36)}
+  button.primary:active:not(:disabled){transform:translateY(0)}
+  button.primary:disabled{opacity:.45;cursor:not-allowed;box-shadow:none}
+  button:focus-visible,input:focus-visible{outline:2px solid var(--warn);outline-offset:2px}
+  .spinner{width:16px;height:16px;border:2px solid rgba(4,18,26,.35);border-top-color:#04121a;border-radius:50%;animation:spin .7s linear infinite;display:none}
+  button.loading .spinner{display:block}
+  @keyframes spin{to{transform:rotate(360deg)}}
+
+  .msg{margin-top:16px;padding:12px 14px;border-radius:var(--r2);font-size:14px;display:none;gap:10px;align-items:flex-start;line-height:1.5}
+  .msg svg{width:18px;height:18px;flex:none;margin-top:1px}
+  .msg.err{display:flex;background:rgba(251,113,133,.1);border:1px solid rgba(251,113,133,.35);color:#ffd6dd}
+  .msg.ok{display:flex;background:rgba(52,211,153,.1);border:1px solid rgba(52,211,153,.35);color:#d1fae5}
+
+  /* ---------- record ---------- */
+  .empty{display:flex;flex-direction:column;align-items:center;text-align:center;gap:8px;padding:26px 10px;color:var(--muted);font-size:14px;border:1px dashed var(--line2);border-radius:var(--r2);background:var(--bg2)}
+  .empty svg{width:36px;height:36px;color:var(--line2)}
+  .rec{border:1px solid var(--line2);border-radius:var(--r2);overflow:hidden;background:var(--bg2)}
+  .rec .top{padding:16px;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;gap:10px}
+  .rec .top .name{font:600 15px "JetBrains Mono",monospace;color:var(--accent);word-break:break-all}
+  .pill{font-size:11px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;padding:4px 9px;border-radius:999px;background:rgba(52,211,153,.12);color:var(--ok);border:1px solid rgba(52,211,153,.3);white-space:nowrap}
+  .rec dl{display:grid;grid-template-columns:1fr 1fr;gap:0}
+  .rec dl>div{padding:12px 16px;border-bottom:1px solid var(--line)}
+  .rec dl>div:nth-child(odd){border-right:1px solid var(--line)}
+  .rec dt{font-size:11px;font-weight:600;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}
+  .rec dd{font:500 14px "JetBrains Mono",monospace;margin-top:3px;word-break:break-all}
+  .rec .time{padding:14px 16px}
+  .rec .time .bar{height:6px;border-radius:3px;background:var(--line);overflow:hidden;margin-top:8px}
+  .rec .time .bar i{display:block;height:100%;background:linear-gradient(90deg,var(--ok),var(--accent))}
+  .rec .time small{color:var(--muted);font-size:12px}
+  .actions{display:flex;gap:8px;padding:12px 16px;border-top:1px solid var(--line);flex-wrap:wrap}
+  .btn{flex:1;min-width:120px;padding:10px 12px;border-radius:8px;border:1px solid var(--line2);background:var(--card2);color:var(--ink);font:600 13px Inter,sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:6px;transition:background .15s,border-color .15s}
+  .btn:hover{background:var(--line);border-color:var(--accent)}
+  .btn svg{width:15px;height:15px}
+
+  /* ---------- rules / steps ---------- */
+  .rules{list-style:none;display:grid;gap:10px;margin-top:4px}
+  .rules li{display:flex;gap:12px;align-items:flex-start;font-size:14px;color:var(--ink2)}
+  .rules li svg{width:18px;height:18px;color:var(--accent);flex:none;margin-top:2px}
+  .rules b{color:var(--ink);font-weight:600}
+  .steps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:12px;margin-top:20px}
+  @media(max-width:640px){.steps{grid-template-columns:1fr}}
+  .step{background:var(--card);border:1px solid var(--line);border-radius:var(--r2);padding:16px}
+  .step i{font-style:normal;font:600 12px "JetBrains Mono",monospace;color:var(--accent)}
+  .step h3{font-size:14px;font-weight:700;margin:6px 0 4px}
+  .step p{font-size:13px;color:var(--muted)}
+
+  .authbtns{display:flex;align-items:center;gap:8px}
+  .authbtns button{padding:8px 14px;border-radius:8px;font:600 13px Inter,sans-serif;cursor:pointer;border:1px solid var(--line2);background:transparent;color:var(--ink)}
+  .authbtns button.cta{border:0;background:linear-gradient(135deg,var(--accent),var(--accent2));color:#04121a}
+  .authbtns .who{font:500 13px "JetBrains Mono",monospace;color:var(--ink2);max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  @media(max-width:560px){.authbtns .who{display:none}}
+  .modal{position:fixed;inset:0;z-index:50;display:none;align-items:center;justify-content:center;padding:20px;background:rgba(5,8,16,.72);backdrop-filter:blur(6px)}
+  .modal.open{display:flex}
+  .modal .box{width:100%;max-width:400px;background:var(--card);border:1px solid var(--line2);border-radius:var(--r);padding:26px;box-shadow:var(--shadow);max-height:92vh;overflow:auto}
+  .modal h3{font-size:20px;font-weight:800;letter-spacing:-.02em}
+  .modal p.s{color:var(--muted);font-size:14px;margin-top:4px}
+  .modal .x{float:right;background:transparent;border:0;color:var(--muted);cursor:pointer;font-size:22px;line-height:1;padding:0 4px}
+  .switch{display:flex;gap:6px;background:var(--bg2);border:1px solid var(--line);border-radius:9px;padding:4px;margin:18px 0 6px}
+  .switch button{flex:1;padding:9px;border:0;border-radius:6px;background:transparent;color:var(--ink2);font:600 13px Inter,sans-serif;cursor:pointer}
+  .switch button[aria-selected=true]{background:var(--card2);color:var(--ink)}
+  .server{border:1px solid var(--line2);border-radius:var(--r2);background:var(--bg2);padding:14px;margin-bottom:18px;position:relative;overflow:hidden}
+  .server.sel{border-color:var(--accent);box-shadow:0 0 0 3px rgba(34,211,238,.12)}
+  .server .head{display:flex;align-items:flex-start;gap:12px}
+  .server .flag{font-size:30px;line-height:1;flex:none}
+  .server .who{flex:1;min-width:0}
+  .server .who b{display:block;font-size:16px;font-weight:700;letter-spacing:-.01em}
+  .server .who small{color:var(--muted);font-size:13px}
+  .server .num{text-align:right;flex:none}
+  .server .num .sp{display:flex;align-items:center;justify-content:flex-end;gap:6px;font:700 15px "JetBrains Mono",monospace;color:var(--ok)}
+  .server .num .sp svg{width:15px;height:15px}
+  .server .num .cap{font:500 13px "JetBrains Mono",monospace;color:var(--ink2);margin-top:2px}
+  .server .track{height:7px;border-radius:4px;background:var(--line);overflow:hidden;margin:12px 0 8px}
+  .server .track i{display:block;height:100%;width:0;border-radius:4px;transition:width .8s cubic-bezier(.2,.8,.2,1)}
+  .server .note{font-size:12.5px;text-align:right;font-weight:500}
+  .lv-ok{color:var(--ok)} .lv-mid{color:var(--warn)} .lv-hi{color:var(--err)}
+  .bg-ok{background:linear-gradient(90deg,var(--ok),var(--accent))}
+  .bg-mid{background:linear-gradient(90deg,var(--warn),#f59e0b)}
+  .bg-hi{background:linear-gradient(90deg,var(--err),#e11d48)}
+  .metrics{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid var(--line)}
+  .metrics div{text-align:center;min-width:0}
+  .metrics span{display:block;font-size:10.5px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+  .metrics b{font:600 14px "JetBrains Mono",monospace}
+  .tabs{display:flex;gap:6px;background:var(--card);border:1px solid var(--line);border-radius:var(--r2);padding:5px;margin-bottom:20px}
+  .tabs button{flex:1;padding:11px 10px;border:0;border-radius:8px;background:transparent;color:var(--ink2);font:600 14px Inter,sans-serif;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:7px;transition:background .15s,color .15s}
+  .tabs button svg{width:16px;height:16px}
+  .tabs button[aria-selected=true]{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#04121a}
+  .pane[hidden]{display:none}
+  .cred{display:grid;gap:8px;margin-top:4px}
+  .cred .row{display:flex;align-items:center;gap:10px;background:var(--bg2);border:1px solid var(--line2);border-radius:8px;padding:10px 12px}
+  .cred .row span{font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);width:92px;flex:none}
+  .cred .row code{flex:1;min-width:0;font:600 14px "JetBrains Mono",monospace;word-break:break-all}
+  .cred .row button{background:transparent;border:0;color:var(--muted);cursor:pointer;padding:4px;display:grid;place-items:center}
+  .cred .row button:hover{color:var(--accent)}
+  .cred .row button svg{width:16px;height:16px}
+  .payload{margin-top:12px;background:var(--bg2);border:1px solid var(--line2);border-radius:8px;padding:12px;font:500 12px/1.7 "JetBrains Mono",monospace;color:var(--ink2);white-space:pre-wrap;word-break:break-all}
+  footer{border-top:1px solid var(--line);padding:20px;text-align:center;font-size:12px;color:var(--muted)}
+  footer b{color:var(--ink2);font-weight:600}
+  @media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
 </head>
 <body>
 
-<main class="gate">
+<nav class="nav"><div class="in">
+  <a class="logo" href="/"><i>JX</i><div>Jitterx Panel<small>Cloud DNS</small></div></a>
+  <div class="authbtns" id="auth">
+    <div class="status" id="status"><b></b><span id="statusText">…</span></div>
+    <button class="cta" id="btnLogin">Entrar</button>
+  </div>
+</div></nav>
 
-  <section class="gate__pitch">
-
-    <header style="display:flex;align-items:center;gap:12px">
-      <div class="brand">
-        <span class="brand__mark">J</span>
-        <span>JitterX<span class="brand__sub">panel cloud</span></span>
-      </div>
-      <div style="margin-left:auto;display:flex;gap:8px">
-        <button class="icon-btn" id="langToggle" aria-label="Cambiar idioma" style="font-family:var(--mono);font-size:11px;font-weight:600">ES</button>
-        <button class="icon-btn" id="themeToggle" aria-label="Cambiar tema"></button>
-      </div>
-    </header>
-
-    <div class="hero">
-      <p class="eyebrow">Zona gestionada en Cloudflare</p>
-      <h1>Tu subdominio, escrito en la zona <em>en 20 segundos</em>.</h1>
-      <p>Eliges el nombre, apuntas el registro a donde quieras y lo tienes vivo durante <b data-trial-days>7</b> días. Renuevas cuando quieras desde el panel.</p>
+<main>
+  <section class="hero">
+    <div class="eyebrow">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M13 2 3 14h9l-1 8 10-12h-9z"/></svg>
+      Registro A · gratis · 7 días
     </div>
-
-    <div class="console" aria-hidden="true">
-      <div class="console__bar">
-        <span class="console__dot"></span><span class="console__dot"></span><span class="console__dot"></span>
-        <span style="margin-left:8px" data-root-domain>tudominio.com</span>
-        <span style="margin-left:auto">zona · registro nuevo</span>
-      </div>
-      <div class="console__body">
-        <div class="console__line console__c">; $ORIGIN <span data-root-domain>tudominio.com</span>.</div>
-        <div class="console__line console__c">; TTL 300   proxy on</div>
-        <div class="console__line"><span class="console__h" id="typeHost"></span><span class="caret"></span></div>
-        <div class="console__line console__c" id="typeNote"></div>
-      </div>
-    </div>
-
-    <div class="feature-grid">
-      <div class="feature">
-        <h4>A, AAAA, CNAME y TXT</h4>
-        <p>Apunta a una IP, a un host de Vercel o Netlify, o verifica un servicio con TXT.</p>
-      </div>
-      <div class="feature">
-        <h4>Cuenta atrás visible</h4>
-        <p>Cada subdominio lleva su anillo de caducidad. Nada desaparece sin avisar.</p>
-      </div>
-      <div class="feature">
-        <h4>Renovación en un clic</h4>
-        <p>Cuando quedan <b data-renew-days>3</b> días o menos, el botón de renovar se activa solo.</p>
-      </div>
-      <div class="feature">
-        <h4>Proxy de Cloudflare</h4>
-        <p>Actívalo y obtienes HTTPS y protección sin configurar nada.</p>
-      </div>
-    </div>
-
-    <p style="margin:0;font-size:12px;color:var(--paper-3);font-family:var(--mono)">
-      JitterX Panel Cloud · <span id="modeNote"></span>
-    </p>
+    <h1>Apunta un subdominio a tu VPS <span>en segundos</span></h1>
+    <p class="lead">Elige un nombre, escribe la IP de tu servidor y listo. El registro se crea al instante en <span class="mono" id="zoneLead">tu dominio</span> y se elimina solo cuando expira.</p>
   </section>
 
-  <section class="gate__form">
-    <div class="auth-card">
+  <section class="stats">
+    <div class="stat"><label>Cuentas creadas</label><b id="total">—</b></div>
+    <div class="stat"><label>Activas ahora</label><b id="active">—</b></div>
+    <div class="stat"><label>Plazas disponibles</label><b id="free">—</b><div class="bar"><i id="bar"></i></div></div>
+  </section>
 
-      <h2 style="font-size:24px;margin-bottom:6px">Entra al panel</h2>
-      <p style="color:var(--paper-2);font-size:14px;margin:0 0 22px">
-        Crea una cuenta o accede para gestionar tus subdominios.
-      </p>
+  <div class="tabs" role="tablist">
+    <button id="tabDns" role="tab" aria-selected="true" aria-controls="paneDns"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15 15 0 0 1 4 10 15 15 0 0 1-4 10 15 15 0 0 1-4-10 15 15 0 0 1 4-10z"/></svg>Dominio DNS</button>
+    <button id="tabSsh" role="tab" aria-selected="false" aria-controls="paneSsh"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m6 9 3 3-3 3M13 15h5"/></svg>Cuenta SSH</button>
+  </div>
 
-      <div class="tabs" role="tablist">
-        <button class="tab is-active" data-tab="login" role="tab">Entrar</button>
-        <button class="tab" data-tab="register" role="tab">Crear cuenta</button>
+  <div class="pane" id="paneDns" role="tabpanel">
+  <div class="grid">
+    <section class="card">
+      <h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15 15 0 0 1 4 10 15 15 0 0 1-4 10 15 15 0 0 1-4-10 15 15 0 0 1 4-10z"/></svg>Crear registro</h2>
+      <p class="sub">Solo letras minúsculas, números y guiones. IPv4 pública.</p>
+
+      <div class="f">
+        <label for="sub">Subdominio</label>
+        <div class="field"><input id="sub" placeholder="mi-servidor" maxlength="32" autocomplete="off" autocapitalize="none" spellcheck="false"><span class="sfx" id="suffix">.…</span></div>
+        <div class="hint">Entre 2 y 32 caracteres.</div>
+      </div>
+      <div class="f">
+        <label for="ip">IP pública del VPS</label>
+        <div class="field"><input id="ip" placeholder="203.0.113.10" inputmode="decimal" autocomplete="off"></div>
       </div>
 
-      <form id="loginForm" novalidate>
-        <div class="field">
-          <label class="field__label" for="li-email">Correo</label>
-          <input class="input" id="li-email" type="email" autocomplete="email" placeholder="tu@correo.com" required>
-        </div>
-        <div class="field">
-          <label class="field__label" for="li-pass">Contraseña</label>
-          <input class="input" id="li-pass" type="password" autocomplete="current-password" placeholder="••••••••" required>
-        </div>
-        <p class="field__error" id="loginError"></p>
-        <button class="btn btn--primary btn--block" type="submit" id="loginBtn">Entrar al panel</button>
-      </form>
+      <div class="preview"><span>Resultado:</span><code id="pvName">mi-servidor.…</code><span class="arrow">→</span><code id="pvIp">0.0.0.0</code></div>
 
-      <form id="registerForm" hidden novalidate>
-        <div class="field">
-          <label class="field__label" for="rg-name">Cómo te llamamos</label>
-          <input class="input" id="rg-name" type="text" autocomplete="name" placeholder="Álex" required>
-        </div>
-        <div class="field">
-          <label class="field__label" for="rg-email">Correo</label>
-          <input class="input" id="rg-email" type="email" autocomplete="email" placeholder="tu@correo.com" required>
-        </div>
-        <div class="field">
-          <label class="field__label" for="rg-pass">Contraseña</label>
-          <input class="input" id="rg-pass" type="password" autocomplete="new-password" placeholder="Mínimo 8 caracteres" required>
-          <div class="meter" style="margin-top:8px"><div class="meter__fill" id="pwMeter" style="width:0"></div></div>
-          <p class="field__hint" id="pwHint">Mezcla mayúsculas, números y algún símbolo.</p>
-        </div>
-        <label class="switch" style="margin:4px 0 14px">
-          <input type="checkbox" id="rg-terms">
-          <span class="switch__track"></span>
-          <span style="font-size:13px;color:var(--paper-2)">Acepto que los subdominios caducan a los <b data-trial-days>7</b> días.</span>
-        </label>
-        <p class="field__error" id="registerError"></p>
-        <button class="btn btn--primary btn--block" type="submit" id="registerBtn">Crear mi cuenta</button>
-      </form>
+      <button class="primary" id="go"><span class="spinner"></span><span id="goText">Crear registro A · 7 días</span></button>
+      <div class="msg" id="msg"></div>
+    </section>
 
-      <div class="divider">o</div>
+    <aside class="card">
+      <h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 7 9 18l-5-5"/></svg>Tu registro</h2>
+      <p class="sub">Se muestra el registro activo de este dispositivo.</p>
+      <div id="mine"></div>
 
-      <div class="notice notice--pulse" id="demoNotice" hidden>
-        <div>
-          <strong>Modo demostración.</strong>
-          Todo se guarda en este navegador y no se toca DNS de verdad. Para conectarlo a Cloudflare, rellena <code>apiBase</code> en <code>assets/js/config.js</code>.
-          <button class="btn btn--sm btn--ghost" id="fillDemo" style="margin-top:9px">Rellenar cuenta de prueba</button>
+      <h2 style="margin-top:24px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>Reglas</h2>
+      <ul class="rules">
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg><span>Cada registro dura <b>7 días</b> y se elimina automáticamente.</span></li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span><b>1 registro por usuario</b> cada 7 días.</span></li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg><span>Solo IPv4. Modo <b>DNS only</b>, sin proxy de Cloudflare.</span></li>
+        <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M13 2 3 14h9l-1 8 10-12h-9z"/></svg><span>Propagación en menos de <b>1 minuto</b>.</span></li>
+      </ul>
+    </aside>
+  </div>
+
+  </div>
+
+  <div class="pane" id="paneSsh" role="tabpanel" hidden>
+    <div class="grid">
+      <section class="card">
+        <h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m6 9 3 3-3 3M13 15h5"/></svg>Crear cuenta SSH</h2>
+        <p class="sub">Cuenta SSH sobre WebSocket para tu app de túnel. Contraseña generada automáticamente.</p>
+        <label style="display:block;font-size:13px;font-weight:600;color:var(--ink2);margin:14px 0 8px">Servidor</label>
+        <div class="server sel" id="server">
+          <div class="head"><div class="flag">🌐</div><div class="who"><b>Cargando…</b><small>—</small></div>
+            <div class="num"><div class="sp">—</div><div class="cap">—</div></div></div>
+          <div class="track"><i></i></div><div class="note">—</div>
         </div>
-      </div>
+        <div class="f">
+          <label for="user">Nombre de usuario</label>
+          <div class="field"><input id="user" placeholder="miusuario" maxlength="16" autocomplete="off" autocapitalize="none" spellcheck="false"></div>
+          <div class="hint">3 a 16 caracteres, empieza por letra, solo minúsculas y números.</div>
+        </div>
+        <button class="primary" id="goSsh"><span class="spinner"></span><span id="goSshText">Crear cuenta · 7 días</span></button>
+        <div class="msg" id="msgSsh"></div>
+      </section>
 
+      <aside class="card">
+        <h2><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 7 9 18l-5-5"/></svg>Tu cuenta</h2>
+        <p class="sub">Datos de acceso de este dispositivo.</p>
+        <div id="mySsh"></div>
+
+        <h2 style="margin-top:24px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>Condiciones</h2>
+        <ul class="rules">
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg><span>La cuenta caduca a los <b>7 días</b>.</span></li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg><span><b>1 cuenta por usuario</b> y <b>1 conexión</b> simultánea.</span></li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m6 9 3 3-3 3"/></svg><span>Acceso por <b>WebSocket</b>, sin shell (solo túnel).</span></li>
+          <li><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 9v4M12 17h.01"/><path d="M10.3 3.9 1.8 18a2 2 0 0 0 1.7 3h17a2 2 0 0 0 1.7-3L13.7 3.9a2 2 0 0 0-3.4 0z"/></svg><span>Prohibido spam, escaneo o abuso. Se suspende sin aviso.</span></li>
+        </ul>
+      </aside>
     </div>
+  </div>
+
+  <section class="steps">
+    <div class="step"><i>01</i><h3>Elige un nombre</h3><p>Escribe el subdominio que quieres usar.</p></div>
+    <div class="step"><i>02</i><h3>Pon la IP de tu VPS</h3><p>La IPv4 pública donde corre tu servidor.</p></div>
+    <div class="step"><i>03</i><h3>Conéctate</h3><p>En menos de un minuto tu dominio ya resuelve.</p></div>
   </section>
 </main>
 
-<script src="assets/js/config.js"></script>
-<script src="assets/js/core.js"></script>
-<script src="assets/js/api.js"></script>
-<script src="assets/js/auth.js"></script>
+<div class="modal" id="modal">
+  <div class="box">
+    <button class="x" id="mClose" aria-label="Cerrar">&times;</button>
+    <h3 id="mTitle">Entrar en tu cuenta</h3>
+    <p class="s" id="mSub">Accede para gestionar tus cuentas y compras.</p>
+    <div class="switch" role="tablist">
+      <button id="swLogin" aria-selected="true">Iniciar sesión</button>
+      <button id="swReg" aria-selected="false">Crear cuenta</button>
+    </div>
+    <div class="f" id="fNombre" hidden>
+      <label for="mNombre">Nombre</label>
+      <div class="field"><input id="mNombre" placeholder="Tu nombre" maxlength="60" autocomplete="name"></div>
+    </div>
+    <div class="f">
+      <label for="mEmail">Correo electrónico</label>
+      <div class="field"><input id="mEmail" type="email" placeholder="tucorreo@ejemplo.com" autocomplete="email" autocapitalize="none"></div>
+    </div>
+    <div class="f">
+      <label for="mPass">Contraseña</label>
+      <div class="field"><input id="mPass" type="password" placeholder="••••••••" autocomplete="current-password"></div>
+      <div class="hint" id="mHint" hidden>Mínimo 8 caracteres.</div>
+    </div>
+    <button class="primary" id="mGo"><span class="spinner"></span><span id="mGoText">Entrar</span></button>
+    <div class="msg" id="mMsg"></div>
+  </div>
+</div>
+
+<footer><b>Jitterx Panel Cloud</b> · DNS temporal sobre Cloudflare · <span id="year"></span></footer>
+
+<script>
+const $=s=>document.querySelector(s);
+// ID de dispositivo persistente (se envía en cada petición a la API)
+let device=localStorage.getItem('jx_device')||(document.cookie.match(/(?:^|;\s*)jx_device=([^;]+)/)||[])[1]||'';
+if(!device){device=crypto.randomUUID();}
+localStorage.setItem('jx_device',device);
+const api=async(path,opts={})=>{
+  const r=await fetch(path,{...opts,headers:{...(opts.headers||{}),'x-jx-device':device}});
+  const txt=await r.text();
+  try{return JSON.parse(txt)}catch{throw new Error(r.status===404?('No existe '+path+' en el servidor'):('Respuesta inválida del servidor ('+r.status+')'))}
+};
+
+const ICON_OK='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="m9 12 2 2 4-4"/></svg>';
+const ICON_ERR='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4M12 16h.01"/></svg>';
+let zone='';
+$('#year').textContent=new Date().getFullYear();
+
+const fmt=t=>new Date(t).toLocaleString('es',{dateStyle:'medium',timeStyle:'short'});
+const setStatus=(cls,txt)=>{$('#status').className='status '+cls;$('#statusText').textContent=txt};
+const showMsg=(cls,txt)=>{const m=$('#msg');m.className='msg '+cls;m.innerHTML=(cls==='ok'?ICON_OK:ICON_ERR)+'<span>'+txt+'</span>'};
+
+function updatePreview(){
+  const s=$('#sub').value.trim().toLowerCase()||'mi-servidor';
+  $('#pvName').textContent=s+'.'+(zone||'…');
+  $('#pvIp').textContent=$('#ip').value.trim()||'0.0.0.0';
+}
+$('#sub').addEventListener('input',updatePreview);
+$('#ip').addEventListener('input',updatePreview);
+
+function lockButton(locked){
+  const b=$('#go'); b.disabled=locked; b.classList.remove('loading');
+  $('#goText').textContent=locked?'Ya tienes un registro activo':'Crear registro A · 7 días';
+}
+
+function showRecord(r){
+  if(!r){$('#mine').innerHTML='<div class="empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="3" y="4" width="18" height="16" rx="2"/><path d="M3 10h18"/></svg>Todavía no has creado ningún registro.<br>Aparecerá aquí en cuanto lo hagas.</div>';return}
+  const total=7*864e5,left=Math.max(0,r.expiresAt-Date.now()),d=Math.floor(left/864e5),h=Math.floor(left%864e5/36e5),pct=Math.max(2,Math.round(left/total*100));
+  $('#mine').innerHTML=
+    '<div class="rec"><div class="top"><span class="name">'+r.name+'</span><span class="pill">Activo</span></div>'+
+    '<dl><div><dt>Tipo</dt><dd>A</dd></div><div><dt>Apunta a</dt><dd>'+r.ip+'</dd></div>'+
+    '<div><dt>Creado</dt><dd>'+(r.createdAt?fmt(r.createdAt):'—')+'</dd></div><div><dt>Expira</dt><dd>'+fmt(r.expiresAt)+'</dd></div></dl>'+
+    '<div class="time"><small>Tiempo restante: <b>'+d+' d '+h+' h</b></small><div class="bar"><i style="width:'+pct+'%"></i></div></div>'+
+    '<div class="actions"><button class="btn" id="cp"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>Copiar dominio</button>'+
+    '<a class="btn" href="http://'+r.name+'" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6M15 3h6v6M10 14 21 3"/></svg>Abrir</a></div></div>';
+  $('#cp').onclick=e=>{navigator.clipboard.writeText(r.name);e.currentTarget.lastChild.textContent='Copiado';};
+}
+
+async function load(){
+  try{
+    const s=await api('/api/stats');
+    if(s.error) throw new Error(s.error);
+    zone=s.zone||'';
+    $('#suffix').textContent='.'+zone; $('#zoneLead').textContent=zone; updatePreview();
+    $('#total').textContent=s.total; $('#active').textContent=s.active;
+    $('#free').textContent=Math.max(0,s.max-s.active)+' / '+s.max;
+    $('#bar').style.width=Math.min(100,s.active/s.max*100)+'%';
+    setStatus('on','Sistema operativo');
+    let remote=null;
+    try{const m=await api('/api/me'); remote=m.record||null;}catch(e){console.warn('api/me:',e.message)}
+    const rec=remote||JSON.parse(localStorage.getItem('jx_record')||'null');
+    const valid=rec&&rec.expiresAt>Date.now()?rec:null;
+    if(remote) localStorage.setItem('jx_record',JSON.stringify(remote));
+    showRecord(valid); lockButton(!!valid);
+  }catch(e){
+    setStatus('off','Sin conexión con la API');
+    showRecord(null);
+    showMsg('err','La API no responde. '+(e.message||'Revisa la configuración en Vercel y vuelve a desplegar.'));
+  }
+}
+
+$('#go').onclick=async()=>{
+  const b=$('#go'); b.disabled=true; b.classList.add('loading'); $('#goText').textContent='Creando…'; $('#msg').className='msg';
+  const j=await api('/api/create',{method:'POST',headers:{'content-type':'application/json'},
+    body:JSON.stringify({subdomain:$('#sub').value,ip:$('#ip').value})}).catch(e=>({error:e.message}));
+  if(j.ok){
+    localStorage.setItem('jx_record',JSON.stringify(j.record));
+    showMsg('ok','Registro creado: <b>'+j.record.name+'</b> → '+j.record.ip+'. Estará activo en menos de un minuto.');
+    showRecord(j.record); lockButton(true); load();
+  }else{
+    showMsg('err',j.error||'Error desconocido');
+    if(j.record){showRecord(j.record);lockButton(true)} else lockButton(false);
+  }
+};
+/* ---------- pestañas ---------- */
+function tab(which){
+  const dns=which==='dns';
+  $('#tabDns').setAttribute('aria-selected',dns); $('#tabSsh').setAttribute('aria-selected',!dns);
+  $('#paneDns').hidden=!dns; $('#paneSsh').hidden=dns;
+  location.hash=dns?'':'#ssh';
+  if(!dns&&!sshLoaded) loadSsh();
+}
+$('#tabDns').onclick=()=>tab('dns');
+$('#tabSsh').onclick=()=>tab('ssh');
+
+/* ---------- cuentas SSH ---------- */
+let sshLoaded=false;
+const showMsgSsh=(cls,txt)=>{const m=$('#msgSsh');m.className='msg '+cls;m.innerHTML=(cls==='ok'?ICON_OK:ICON_ERR)+'<span>'+txt+'</span>'};
+const copyIcon='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>';
+const row=(label,value)=>'<div class="row"><span>'+label+'</span><code>'+value+'</code><button data-copy="'+value+'" title="Copiar">'+copyIcon+'</button></div>';
+
+function showAccount(a){
+  if(!a){$('#mySsh').innerHTML='<div class="empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m6 9 3 3-3 3"/></svg>Todavía no has creado ninguna cuenta.<br>Aparecerá aquí con tus datos de acceso.</div>';return}
+  const total=7*864e5,left=Math.max(0,a.expires_at-Date.now()),d=Math.floor(left/864e5),h=Math.floor(left%864e5/36e5),pct=Math.max(2,Math.round(left/total*100));
+  const payload='GET / HTTP/1.1[crlf]Host: '+a.host+'[crlf]Upgrade: websocket[crlf][crlf]';
+  $('#mySsh').innerHTML=
+    '<div class="rec"><div class="top"><span class="name">'+a.username+'</span><span class="pill">Activa</span></div>'+
+    '<div style="padding:14px 16px"><div class="cred">'+
+      row('Host',a.host)+row('Usuario',a.username)+row('Contraseña',a.password)+
+      row('Puerto WS',a.ws_port)+row('Puerto SSL',a.ssl_port)+
+    '</div>'+
+    '<div class="payload">'+payload+'</div>'+
+    '</div>'+
+    '<div class="time"><small>Caduca el '+fmt(a.expires_at)+' · quedan <b>'+d+' d '+h+' h</b></small><div class="bar"><i style="width:'+pct+'%"></i></div></div>'+
+    '<div class="actions"><button class="btn" id="cpAll">'+copyIcon+'Copiar todo</button></div></div>';
+  $('#mySsh').querySelectorAll('button[data-copy]').forEach(b=>b.onclick=()=>{navigator.clipboard.writeText(b.dataset.copy);b.style.color='var(--ok)'});
+  $('#cpAll').onclick=e=>{
+    navigator.clipboard.writeText('Host: '+a.host+'\nUsuario: '+a.username+'\nContraseña: '+a.password+'\nPuerto WS: '+a.ws_port+'\nPuerto SSL: '+a.ssl_port+'\nCaduca: '+fmt(a.expires_at));
+    e.currentTarget.lastChild.textContent='Copiado';
+  };
+}
+
+function lockSsh(locked){
+  const b=$('#goSsh'); b.disabled=locked; b.classList.remove('loading');
+  $('#goSshText').textContent=locked?'Ya tienes una cuenta activa':'Crear cuenta · 7 días';
+}
+
+const FLAGS={BR:'🇧🇷',US:'🇺🇸',ES:'🇪🇸',AR:'🇦🇷',MX:'🇲🇽',CL:'🇨🇱',CO:'🇨🇴',PE:'🇵🇪',DE:'🇩🇪',FR:'🇫🇷',NL:'🇳🇱',SG:'🇸🇬',JP:'🇯🇵'};
+const SPEED='<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 20a8 8 0 1 1 8-8"/><path d="m12 12 4-3"/></svg>';
+
+function renderServer(s){
+  const used=s.active||0,max=s.max||1,pct=Math.min(100,Math.round(used/max*100));
+  const carga=Math.max(pct,s.cpu||0,s.ram||0);
+  const lv=carga>=85?'hi':carga>=60?'mid':'ok';
+  const nota=lv==='hi'?'Servidor muy saturado, posible lentitud':lv==='mid'?'Carga moderada, rendimiento normal':'Excelente velocidad y latencia';
+  const el=$('#server');
+  el.querySelector('.flag').textContent=FLAGS[(s.flag||'').toUpperCase()]||'🌐';
+  el.querySelector('.who b').textContent=s.country||'Servidor';
+  el.querySelector('.who small').textContent=(s.city?s.city+' · ':'')+(s.host||'');
+  el.querySelector('.sp').className='sp lv-'+lv;
+  el.querySelector('.sp').innerHTML=SPEED+' '+(s.mbps!=null?s.mbps.toFixed(2):'0.00')+' Mbps';
+  el.querySelector('.cap').textContent=used+'/'+max;
+  const bar=el.querySelector('.track i'); bar.className='bg-'+lv; bar.style.width=Math.max(2,pct)+'%';
+  const note=el.querySelector('.note'); note.className='note lv-'+lv; note.textContent=nota;
+  let m=el.querySelector('.metrics');
+  if(!m){m=document.createElement('div');m.className='metrics';el.appendChild(m)}
+  const up=s.uptime?(s.uptime>=86400?Math.floor(s.uptime/86400)+'d':Math.floor(s.uptime/3600)+'h'):'—';
+  m.innerHTML='<div><span>CPU</span><b class="lv-'+(s.cpu>=85?'hi':s.cpu>=60?'mid':'ok')+'">'+(s.cpu||0)+'%</b></div>'+
+              '<div><span>RAM</span><b class="lv-'+(s.ram>=85?'hi':s.ram>=60?'mid':'ok')+'">'+(s.ram||0)+'%</b></div>'+
+              '<div><span>Uptime</span><b>'+up+'</b></div>';
+}
+
+async function loadSsh(){
+  sshLoaded=true;
+  try{
+    const s=await api('/api/ssh');
+    if(s.error) throw new Error(s.error);
+    renderServer(s);
+    clearInterval(window._srv); window._srv=setInterval(refreshServer,15000);
+    const a=s.account||JSON.parse(localStorage.getItem('jx_ssh')||'null');
+    const valid=a&&a.expires_at>Date.now()?a:null;
+    if(s.account) localStorage.setItem('jx_ssh',JSON.stringify(s.account));
+    showAccount(valid); lockSsh(!!valid);
+  }catch(e){
+    showAccount(null); lockSsh(false);
+    showMsgSsh('err','No se pudo consultar el servidor. '+e.message);
+  }
+}
+
+async function refreshServer(){
+  if($('#paneSsh').hidden) return;
+  try{const s=await api('/api/ssh'); if(!s.error) renderServer(s);}catch{}
+}
+
+$('#goSsh').onclick=async()=>{
+  const b=$('#goSsh'); b.disabled=true; b.classList.add('loading'); $('#goSshText').textContent='Creando…'; $('#msgSsh').className='msg';
+  const j=await api('/api/ssh',{method:'POST',headers:{'content-type':'application/json'},
+    body:JSON.stringify({username:$('#user').value})}).catch(e=>({error:e.message}));
+  if(j.ok){
+    localStorage.setItem('jx_ssh',JSON.stringify(j.account));
+    showMsgSsh('ok','Cuenta creada. Guarda la contraseña: solo se muestra aquí.');
+    showAccount(j.account); lockSsh(true); refreshServer();
+  }else{
+    showMsgSsh('err',j.error||'Error desconocido');
+    if(j.account){showAccount(j.account);lockSsh(true)} else lockSsh(false);
+  }
+};
+
+/* ---------- sesión de usuario ---------- */
+let sesion=null, modo='login';
+const showMsgM=(cls,txt)=>{const m=$('#mMsg');m.className='msg '+cls;m.innerHTML=(cls==='ok'?ICON_OK:ICON_ERR)+'<span>'+txt+'</span>'};
+
+function paintAuth(){
+  const box=$('#auth');
+  box.querySelectorAll('.who,#btnLogout,#btnLogin').forEach(n=>n.remove());
+  if(sesion){
+    const w=document.createElement('span'); w.className='who'; w.textContent=sesion.email; box.appendChild(w);
+    const b=document.createElement('button'); b.id='btnLogout'; b.textContent='Salir'; box.appendChild(b);
+    b.onclick=async()=>{await api('/api/auth/logout',{method:'POST'}).catch(()=>{});sesion=null;paintAuth()};
+  }else{
+    const b=document.createElement('button'); b.id='btnLogin'; b.className='cta'; b.textContent='Entrar'; box.appendChild(b);
+    b.onclick=()=>openModal('login');
+  }
+}
+
+function setModo(m){
+  modo=m;
+  $('#swLogin').setAttribute('aria-selected',m==='login');
+  $('#swReg').setAttribute('aria-selected',m==='reg');
+  $('#fNombre').hidden=m==='login';
+  $('#mHint').hidden=m==='login';
+  $('#mTitle').textContent=m==='login'?'Entrar en tu cuenta':'Crear una cuenta';
+  $('#mSub').textContent=m==='login'?'Accede para gestionar tus cuentas y compras.':'Regístrate para comprar y renovar tus cuentas SSH.';
+  $('#mGoText').textContent=m==='login'?'Entrar':'Crear cuenta';
+  $('#mPass').autocomplete=m==='login'?'current-password':'new-password';
+  $('#mMsg').className='msg';
+}
+const openModal=m=>{setModo(m||'login');$('#modal').classList.add('open');setTimeout(()=>$('#mEmail').focus(),50)};
+const closeModal=()=>$('#modal').classList.remove('open');
+$('#mClose').onclick=closeModal;
+$('#modal').onclick=e=>{if(e.target.id==='modal')closeModal()};
+document.addEventListener('keydown',e=>{if(e.key==='Escape')closeModal()});
+$('#swLogin').onclick=()=>setModo('login');
+$('#swReg').onclick=()=>setModo('reg');
+
+$('#mGo').onclick=async()=>{
+  const b=$('#mGo'); b.disabled=true; b.classList.add('loading'); $('#mMsg').className='msg';
+  const path=modo==='login'?'/api/auth/login':'/api/auth/register';
+  const body={email:$('#mEmail').value,password:$('#mPass').value};
+  if(modo==='reg') body.nombre=$('#mNombre').value;
+  const j=await api(path,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify(body)})
+    .catch(e=>({error:e.message}));
+  b.disabled=false; b.classList.remove('loading');
+  if(j.ok){sesion=j.user;paintAuth();closeModal();$('#mPass').value='';}
+  else showMsgM('err',j.error||'No se pudo completar la operación.');
+};
+$('#mPass').addEventListener('keydown',e=>{if(e.key==='Enter')$('#mGo').click()});
+
+async function loadSession(){
+  try{const r=await api('/api/auth/session'); sesion=r.user||null;}catch{sesion=null}
+  paintAuth();
+}
+
+loadSession();
+if(location.hash==='#ssh') tab('ssh');
+load();
+</script>
 </body>
 </html>
